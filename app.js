@@ -77,7 +77,7 @@ function orderArrows(e,side,o){const s=e.s,ro=e.ro,A=[];if(!o)return A;
     for(const k of['L','R']){const sg=k==='L'?-1:1,nm=ro[k][0];if(!nm||s.B.W[k].n<=0)continue;const p=pos[nm];
       if(o.w==='斜')A.push({from:p,to:[sg*WF[1][0],WF[1][1]],color:0xffd24a});
       if(o.w==='急')A.push({from:p,to:[sg*WCUT[1][0],WCUT[1][1]],color:0xff9a3a});
-      if(o.w==='收')A.push({from:[sg*14,-23],to:[sg*7.5,-25],color:0xff6040});
+      if(o.w==='收')A.push({from:[sg*21,-21],to:[sg*7.5,-25],color:0xffb030});
       if(o.w==='集')A.push({from:p,to:[sg*2.9,(ct?CP1:CP0)['己'][1]+5.8],color:0x6fe0ff});}}
   else{if(o.f==='壓')A.push({from:[0,-21],to:[0,-12],color:0xff6040});
     if(o.f==='探')A.push({from:[3,-21],to:[3,12],color:0xe8e8e8,w:.5});
@@ -232,15 +232,33 @@ function orderCard(e,sd,draft,sent,canOrder,key){const s=e.s;
     let note='';if(s.B.W.L.pos==='flank')note='兩翼已到敵陣兩側：可以收攏側擊，或梯次在後（補位、停在原地）。';else if(s.B.W.L.n<=0||s.B.W.R.n<=0)note='有一翼已經沒有兵力，兩翼只能留在原地。';
     else if(!ws.includes('集'))note='「向中部集中」只能再做到後陣 4 曲、且兩翼各至少還有 2 曲。';
     return `<div class="card"><p class="kick">第 ${s.r+1} 回合・藍軍下令</p>
-      <div class="grp"><b>中部（戊己丁壬）</b><div class="opts">${cs.map(k=>`<button type="button" class="o ${draft.c===k?'on':''}" data-g="c" data-v="${k}"><b>${OPT.c[k][0]}</b><span>${esc(OPT.c[k][1])}</span></button>`).join('')}</div></div>
-      <div class="grp"><b>兩翼（左：丙乙甲　右：癸庚辛）</b><div class="opts">${wl.map(k=>`<button type="button" class="o ${draft.w===k?'on':''}" data-g="w" data-v="${k}"><b>${OPT.w[k][0]}</b><span>${esc(OPT.w[k][1])}</span></button>`).join('')}</div>${note?`<p class="note">${note}</p>`:''}</div>
+      <div class="grp"><b>中部（戊己丁壬）</b><div class="opts">${cs.map(k=>`<button type="button" class="o dg ${draft.c===k?'on':''}" data-g="c" data-v="${k}">${optSvg(e,sd,'c',k)}<div class="ot"><b>${OPT.c[k][0]}</b><span>${esc(OPT.c[k][1])}</span></div></button>`).join('')}</div></div>
+      <div class="grp"><b>兩翼（左：丙乙甲　右：癸庚辛）</b><div class="opts">${wl.map(k=>`<button type="button" class="o dg ${draft.w===k?'on':''}" data-g="w" data-v="${k}">${optSvg(e,sd,'w',k)}<div class="ot"><b>${OPT.w[k][0]}</b><span>${esc(OPT.w[k][1])}</span></div></button>`).join('')}</div>${note?`<p class="note">${note}</p>`:''}</div>
       ${sendBtn(draft.c&&draft.w,sent,canOrder)}</div>`;}
   const fs=shuffle(['頂','壓','探'],key+'f'),rs=shuffle(['rear','center','flanks'],key+'r');
   let note='';if(draft.res&&moveRes(s.R.res,draft.res)!==draft.res)note=`預備隊現在在${RN[s.R.res]}，要先回到後方：這一回合只會走到後方居中，下一回合才到${RN[draft.res]}。`;
   return `<div class="card"><p class="kick">第 ${s.r+1} 回合・紅軍下令</p>
-    <div class="grp"><b>前排</b><div class="opts">${fs.map(k=>`<button type="button" class="o ${draft.f===k?'on':''}" data-g="f" data-v="${k}"><b>${OPT.f[k][0]}</b><span>${esc(OPT.f[k][1])}</span></button>`).join('')}</div></div>
-    <div class="grp"><b>預備隊（現在在${RN[s.R.res]}，剩 ${s.R.resN}）</b><div class="opts">${rs.map(k=>`<button type="button" class="o ${draft.res===k?'on':''}" data-g="res" data-v="${k}"><b>${OPT.res[k][0]}${k===s.R.res?'（原地不動）':''}</b><span>${esc(OPT.res[k][1])}</span></button>`).join('')}</div>${note?`<p class="note">${note}</p>`:''}</div>
+    <div class="grp"><b>前排</b><div class="opts">${fs.map(k=>`<button type="button" class="o dg ${draft.f===k?'on':''}" data-g="f" data-v="${k}">${optSvg(e,sd,'f',k)}<div class="ot"><b>${OPT.f[k][0]}</b><span>${esc(OPT.f[k][1])}</span></div></button>`).join('')}</div></div>
+    <div class="grp"><b>預備隊（現在在${RN[s.R.res]}，剩 ${s.R.resN}）</b><div class="opts">${rs.map(k=>`<button type="button" class="o dg ${draft.res===k?'on':''}" data-g="res" data-v="${k}">${optSvg(e,sd,'res',k)}<div class="ot"><b>${OPT.res[k][0]}${k===s.R.res?'（原地不動）':''}</b><span>${esc(OPT.res[k][1])}</span></div></button>`).join('')}</div>${note?`<p class="note">${note}</p>`:''}</div>
     ${sendBtn(draft.f&&draft.res,sent,canOrder)}</div>`;}
+
+// 選項示意圖：俯視的小圖，畫出現在的陣形與這個命令會怎麼動（藍軍在下；紅軍畫面轉 180 度，紅軍在下）
+const hexc=n=>'#'+(n>>>0).toString(16).padStart(6,'0');
+function optSvg(e,sd,g,k){const s=e.s,d=sceneDesc(e,sd).groups;let h='';
+  const rect=(x,z,w,l,c,op)=>h+=`<rect x="${(x-w/2).toFixed(1)}" y="${(z-l/2).toFixed(1)}" width="${w}" height="${l}" fill="${c}" opacity="${op||1}"/>`;
+  for(const nm of QU){const u=d[nm];if(u.hidden)continue;rect(u.x,u.z,5,5,u.dead?'#5a5048':'#4f86d8',u.dead?.6:1);}
+  for(const q of['L','C','R']){const u=d['F'+q];rect(u.x,u.z,4.4,9.2,u.rout?'#6a3a30':'#c8452f',u.alive>0?1:.4);}
+  for(const q of['resA','resB']){const u=d[q];rect(u.x,u.z,3.4,4.4,'#9a3a24',u.dead?.4:.9);}
+  const o={[g]:k};let A=orderArrows(e,sd,o);const lab=(x,z,t)=>h+=`<text x="${x}" y="${z}" class="sl" ${sd==='red'?`transform="rotate(180 ${x} ${z})"`:''}>${t}</text>`;
+  if(g==='c'&&k==='纏'&&s.B.contact)h+=`<path d="M-6 -19.5 L-3 -17.5 L0 -19.5 L3 -17.5 L6 -19.5" stroke="#ffd24a" stroke-width="1.3" fill="none"/>`;
+  if(g==='c'&&k==='待'&&!s.B.contact)lab(0,24,'原地');
+  if(g==='w'&&k==='梯')lab(0,24,s.B.W.L.cut?'補位':'原地');
+  if(g==='f'&&k==='頂')h+=`<rect x="-7" y="-19.6" width="14" height="1.6" fill="#ffd24a"/>`;
+  if(g==='res'&&moveRes(s.R.res,k)===s.R.res)lab(0,-44,'不動');
+  for(const a of A){const [x0,z0]=a.from,[x1,z1]=a.to,L=Math.hypot(x1-x0,z1-z0);if(L<1)continue;const ux=(x1-x0)/L,uz=(z1-z0)/L,c=hexc(a.color);
+    const bx=x1-ux*4.6,bz=z1-uz*4.6;h+=`<line x1="${x0.toFixed(1)}" y1="${z0.toFixed(1)}" x2="${bx.toFixed(1)}" y2="${bz.toFixed(1)}" stroke="${c}" stroke-width="2.4" ${a.w?'stroke-dasharray="2 1.5"':''}/>`;
+    h+=`<polygon points="${x1.toFixed(1)},${z1.toFixed(1)} ${(bx-uz*3.2).toFixed(1)},${(bz+ux*3.2).toFixed(1)} ${(bx+uz*3.2).toFixed(1)},${(bz-ux*3.2).toFixed(1)}" fill="${c}"/>`;}
+  return `<svg class="osv" viewBox="-31 -46 62 72" aria-hidden="true"><rect x="-31" y="-46" width="62" height="72" fill="#1a130d"/><g ${sd==='red'?'transform="rotate(180 0 -9)"':''}>${h}</g></svg>`;}
 function sendBtn(ready,sent,canOrder){if(!canOrder)return '<p class="note">同隊已有指揮官在下令，你在觀看。</p>';
   if(sent)return '<button type="button" class="send ok" id="bSend" disabled>✓ 命令已送出・等待結算</button><p class="mini">結算之前，點別的選項可以改命令，改完要再送出一次。</p>';
   return `<button type="button" class="send" id="bSend" ${ready?'':'disabled'}>${ready?'送出命令':'兩個命令都選好才能送出'}</button>`;}
