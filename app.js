@@ -12,6 +12,10 @@ const LOCAL=Q.get('local')==='1',LQ=LOCAL?'&local=1':'';
 const P=GR.P;
 const base=location.href.split('?')[0].split('#')[0];
 const link=r=>`${base}?role=${r}&room=${room}${LQ}`;
+// 從電腦硬碟開啟單一檔案時，手機掃不到硬碟上的檔案：QR 碼改指向網頁版（同一個房號、同一個資料庫）
+const PUBLIC='https://op06dhans-eng.github.io/20261124-goose-file-vs/';
+const FILE=location.protocol==='file:';
+const qrLink=r=>FILE&&!LOCAL?`${PUBLIC}?role=${r}&room=${room}`:link(r);
 const store={get(k){try{return localStorage.getItem(k);}catch(e){return null;}},set(k,v){try{localStorage.setItem(k,v);}catch(e){}}};
 function toast(t,ms=2400){const d=$('#toast');d.textContent=t;d.hidden=false;clearTimeout(toast._t);toast._t=setTimeout(()=>d.hidden=true,ms);}
 const myId=(()=>{let v=null;try{v=sessionStorage.getItem('goose-id');}catch(e){}if(!v){v=Math.random().toString(36).slice(2,10);try{sessionStorage.setItem('goose-id',v);}catch(e){}}return v;})();
@@ -173,6 +177,12 @@ function revealHtml(fin,view){const rv=GRV.review(fin.s.hist);
 function reviewHtml(txt){const parts=txt.split('\n');let h='';for(const p of parts){const m=p.match(/^【(.+?)】(.*)$/);if(m){h+=`<h4>${esc(m[1])}</h4>`;if(m[2])h+=`<p>${esc(m[2])}</p>`;}else h+=`<p>${esc(p)}</p>`;}return `<div class="rv">${h}</div>`;}
 function showReveal(fin){const pg=$('#page');pg.innerHTML=revealHtml(fin);pg.hidden=false;pg.scrollTop=0;$('#revClose').onclick=()=>{pg.hidden=true;};}
 
+const openSet=new Set();let lastSide=null;
+function paintSide(h,toTop){const el=$('#side');if(h===lastSide)return false;lastSide=h;const st=el.scrollTop;el.innerHTML=h;
+  el.querySelectorAll('details[data-k]').forEach(d=>{const k=d.dataset.k;if(k==='help')return;if(openSet.has(k))d.open=true;d.addEventListener('toggle',()=>{if(d.open)openSet.add(k);else openSet.delete(k);});});
+  el.scrollTop=toTop?0:st;return true;}
+const waitHtml=who=>`<div class="head"><span class="who ${who}">${{blue:'你是藍軍・攻方',red:'你是紅軍・守方',proj:'投影',ref:'老師裁判'}[who]}</span><span class="grow"></span><span class="mini">房號 ${room}</span></div><div class="card"><h3>等待老師開局</h3><p>老師打開裁判畫面之後，這裡會自動開始，不用重新整理。</p></div>`;
+if(Q.get('selftest')==='1')window.__T={sceneDesc,orderArrows,optSvg,orderCard,situation,linesFor,reviewHtml,revealHtml,helpHtml,timeline,fxOf,resultText,fullLog,reportCard,sitCard,endCard,forRed};
 /* ====================== 首頁 ====================== */
 $('#loading').remove();
 if(!role){
@@ -187,6 +197,7 @@ if(!role){
       <div class="mbtn"><b>加入已開的推演</b><span>輸入老師畫面上的房號：</span>
         <div class="row"><input class="code" id="mCode" maxlength="6" placeholder="房號" autocapitalize="characters"><button type="button" class="btn blue" data-r="blue">加入藍軍</button><button type="button" class="btn red" data-r="red">加入紅軍</button><button type="button" class="btn" data-r="proj">投影畫面</button></div></div>
     </div></div>`;
+  if(window.TEACH_HTML)pg.querySelector('a.mbtn').onclick=ev=>{ev.preventDefault();location.href=URL.createObjectURL(new Blob([window.TEACH_HTML],{type:'text/html'}));};
   $('#mNew').onclick=()=>{const abc='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';const r=Array.from({length:4},()=>abc[Math.floor(Math.random()*abc.length)]).join('');location.search=`?role=qr&room=${r}${LQ}`;};
   $('#mAI').onclick=()=>{pg.querySelector('.menu').innerHTML=`<div class="mbtn"><b>選擇你要扮演的一方</b><span>電腦會依看得到的跡象推測你的打法，再出手。</span>
     <div class="row"><button type="button" class="btn blue" id="aB">藍軍（攻方・鴈行陣）</button><button type="button" class="btn red" id="aR">紅軍（守方・方陣）</button></div></div><button type="button" class="btn" id="aBack">回上一頁</button>`;
@@ -200,18 +211,19 @@ const be=role==='ai'?null:await makeBackend();
 if(role!=='ai'&&!be){document.body.insertAdjacentHTML('beforeend',`<div class="page"><div class="wrap"><h2>連不上網路資料庫</h2><p class="subt">這台裝置載入不了連線程式，可能是網路不通，或學校網路擋住了 Google 的服務（gstatic.com、firebasedatabase.app）。可以改用手機網路再試一次。</p></div></div>`);return;}
 const qrSvg=txt=>{const q=qrcode(0,'M');q.addData(txt);q.make();return q.createSvgTag({cellSize:8,margin:2,scalable:true});};
 if(role==='qr'){
-  const pg=$('#page');pg.hidden=false;let tab='blue';const cmd={blue:null,red:null};let projSeen=null;
-  const draw=()=>{const now=Date.now(),alive=c=>c&&now-c.t<30000;
+  const pg=$('#page');pg.hidden=false;let tab='blue';const cmd={blue:null,red:null},seen={blue:0,red:0};let projSeen=0;
+  const draw=()=>{const now=Date.now(),alive=sd=>!!cmd[sd]&&now-seen[sd]<30000;
     const L={blue:['藍軍','攻方・鴈行陣'],red:['紅軍','守方・方陣'],proj:['投影畫面','開在教室的大螢幕']};
-    pg.innerHTML=`<div class="wrap">
+    const html=`<div class="wrap">
       <div class="row"><div class="title grow" style="font-size:30px">鴈行對戰</div><div class="round">房號 ${room}</div></div>
       <div class="qrtabs">${['blue','red','proj'].map(k=>`<button type="button" data-t="${k}" class="${k} ${tab===k?'on':''}">${L[k][0]}</button>`).join('')}</div>
-      <div class="qrbox"><div class="lab" style="color:${tab==='blue'?'#1f4e9c':tab==='red'?'#a8261a':'#333'}">${L[tab][0]}・${L[tab][1]}</div>${qrSvg(link(tab))}<div class="url">${esc(link(tab))}</div></div>
-      <div class="joins"><div>藍軍指揮：${alive(cmd.blue)?'<span class="okc">已加入 ✓</span>':'<span class="waitc">等待掃碼</span>'}</div><div>紅軍指揮：${alive(cmd.red)?'<span class="okc">已加入 ✓</span>':'<span class="waitc">等待掃碼</span>'}</div><div>投影畫面：${projSeen&&now-projSeen<30000?'<span class="okc">已開啟 ✓</span>':'<span class="waitc">尚未開啟</span>'}</div></div>
+      <div class="qrbox"><div class="lab" style="color:${tab==='blue'?'#1f4e9c':tab==='red'?'#a8261a':'#333'}">${L[tab][0]}・${L[tab][1]}</div>${qrSvg(qrLink(tab))}<div class="url">${esc(qrLink(tab))}</div></div>
+      <div class="joins"><div>藍軍指揮：${alive('blue')?'<span class="okc">已加入 ✓</span>':'<span class="waitc">等待掃碼</span>'}</div><div>紅軍指揮：${alive('red')?'<span class="okc">已加入 ✓</span>':'<span class="waitc">等待掃碼</span>'}</div><div>投影畫面：${projSeen&&now-projSeen<30000?'<span class="okc">已開啟 ✓</span>':'<span class="waitc">尚未開啟</span>'}</div></div>
       <div class="row"><a class="btn main" href="${esc(link('ref'))}" target="_blank" rel="noopener" style="text-align:center;text-decoration:none">開啟老師裁判畫面（新分頁）</a><a class="btn" href="${esc(link('proj'))}" target="_blank" rel="noopener" style="text-align:center;text-decoration:none">開啟投影畫面（新分頁）</a></div>
       <p class="subt">一次顯示一隊的 QR 碼，請兩隊輪流掃。每隊第一位掃碼的人是指揮官，可以下令；同隊其他人掃碼只能觀看。裁判畫面看得到雙方全部部署，請不要投影。</p></div>`;
+    if(html===draw.last)return;draw.last=html;pg.innerHTML=html;
     pg.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{tab=b.dataset.t;draw();});};
-  be.on('cmd/blue',v=>{cmd.blue=parse(v);draw();});be.on('cmd/red',v=>{cmd.red=parse(v);draw();});be.on('seen/proj',v=>{projSeen=v;draw();});
+  for(const sd of['blue','red'])be.on('cmd/'+sd,v=>{const c=parse(v);if(c&&(!cmd[sd]||c.t!==cmd[sd].t||c.id!==cmd[sd].id))seen[sd]=Date.now();cmd[sd]=c;draw();});let pv=null;be.on('seen/proj',v=>{if(v&&v!==pv)projSeen=Date.now();pv=v;draw();});
   setInterval(draw,5000);draw();return;}
 
 /* ====================== 戰場畫面（共用） ====================== */
@@ -267,8 +279,8 @@ function reportCard(st,i,view,title,pre){const lines=linesFor(st,i,view);return 
 function sitCard(e,view){return `<div class="card"><p class="kick">戰場態勢</p><div class="sit">${situation(e,view).map(t=>`<div>${esc(t)}</div>`).join('')}</div></div>`;}
 function endCard(tl,view,extra){const fin=tl[tl.length-1];return `<div class="card report"><p class="kick">推演結束</p><p class="res">${esc(resultText(fin.s.over,view))}（第 ${fin.s.r} 回合）</p>
   <div class="row"><button type="button" class="btn main" id="bReveal">揭曉與討論</button>${extra||''}</div></div><div class="card"><h3>戰後檢討</h3>${reviewHtml(GRV.review(fin.s.hist))}</div>`;}
-function helpCard(sd,open){return `<details class="card" ${open?'open':''}><summary>${sd==='blue'?'藍軍':'紅軍'}須知（點開／收合）</summary>${helpHtml(sd)}</details>`;}
-function fullLog(st,view){let h='';for(let i=st.log.length-1;i>=0;i--){const L=linesFor(st,i,view);const o=st.hist[i];h+=`<div><b>第 ${i+1} 回合</b>${view==='truth'?`<div class="mini">藍：${esc(ONAME('blue',o.bo))}；紅：${esc(ONAME('red',o.ro))}</div>`:''}${L.map(t=>`<div>${esc(t)}</div>`).join('')}</div>`;}return h?`<details class="card"><summary>歷次戰報</summary><div class="log">${h}</div></details>`:'';}
+function helpCard(sd,open){return `<details class="card" data-k="help" ${open?'open':''}><summary>${sd==='blue'?'藍軍':'紅軍'}須知（點開／收合）</summary>${helpHtml(sd)}</details>`;}
+function fullLog(st,view){let h='';for(let i=st.log.length-1;i>=0;i--){const L=linesFor(st,i,view);const o=st.hist[i];h+=`<div><b>第 ${i+1} 回合</b>${view==='truth'?`<div class="mini">藍：${esc(ONAME('blue',o.bo))}；紅：${esc(ONAME('red',o.ro))}</div>`:''}${L.map(t=>`<div>${esc(t)}</div>`).join('')}</div>`;}return h?`<details class="card" data-k="log"><summary>歷次戰報</summary><div class="log">${h}</div></details>`:'';}
 
 /* ====================== 與電腦對打（單機，不連線） ====================== */
 if(role==='ai'){
@@ -282,7 +294,7 @@ if(role==='ai'){
     if(showRep>=0&&!s.over)h+=reportCard(s,showRep,me,null,cpuSaid);
     if(!s.over){h+=sitCard(e,me)+orderCard(e,me,draft,false,true,gid);}
     h+=helpCard(me,helpOpen&&s.r===0)+fullLog(s,s.over?'truth':me);
-    sideEl.innerHTML=h;bind();}
+    paintSide(h,animate);bind();}
   function bind(){const s=tl[tl.length-1].s;
     $('#side').querySelectorAll('.o').forEach(b=>b.onclick=()=>{draft[b.dataset.g]=b.dataset.v;helpOpen=false;draw(false);});
     const sb=$('#bSend');if(sb)sb.onclick=()=>{if(busy)return;busy=true;sb.disabled=true;sb.textContent='電腦思考中…';
@@ -300,11 +312,12 @@ const onState=[];let firstHist;const histReady=new Promise(r=>firstHist=r);be.on
   if(h){tl=timeline(h);onState.forEach(f=>f(prev,changed));}});
 be.on('orders/blue',v=>{orders.blue=parse(v);onState.forEach(f=>f(null,false));});
 be.on('orders/red',v=>{orders.red=parse(v);onState.forEach(f=>f(null,false));});
-be.on('cmd/blue',v=>{cmd.blue=parse(v);onState.forEach(f=>f(null,false));});
-be.on('cmd/red',v=>{cmd.red=parse(v);onState.forEach(f=>f(null,false));});
-be.on('cfg',v=>{cfg=parse(v)||{ai:{blue:false,red:false}};onState.forEach(f=>f(null,false));});
+const cmdSeen={blue:0,red:0};
+for(const sd of['blue','red'])be.on('cmd/'+sd,v=>{const c=parse(v);if(c&&(!cmd[sd]||c.t!==cmd[sd].t||c.id!==cmd[sd].id))cmdSeen[sd]=Date.now();cmd[sd]=c;onState.forEach(f=>f(null,false));});
+setInterval(()=>onState.forEach(f=>f(null,false)),5000);
+be.on('cfg',v=>{const c=parse(v)||{};cfg={ai:{blue:!!(c.ai&&c.ai.blue),red:!!(c.ai&&c.ai.red)}};onState.forEach(f=>f(null,false));});
 const curOrder=sd=>{const o=orders[sd];return o&&tl&&o.r===tl[tl.length-1].s.r?o:null;};
-const alive=c=>c&&Date.now()-c.t<30000;
+const aliveS=sd=>!!cmd[sd]&&Date.now()-cmdSeen[sd]<30000;
 
 /* ====================== 老師裁判 ====================== */
 if(role==='ref'){
@@ -316,7 +329,7 @@ if(role==='ref'){
       await be.set('hist',JSON.stringify([...hist,{bo:{c:ob.c,w:ob.w},ro:{f:or.f,res:or.res}}]));}
     catch(err){toast('結算失敗：'+err.message,5000);}busy=false;}
   async function restart(){clearTimeout(autoT);await be.set('orders/blue',null);await be.set('orders/red',null);await be.set('hist',JSON.stringify([]));showRep=-1;toast('已重新開局');W.home();}
-  function draw(prev,changed){if(!tl)return;const e=tl[tl.length-1],s=e.s;
+  function draw(prev,changed){if(!tl){paintSide(waitHtml('ref'));return;}const e=tl[tl.length-1],s=e.s;
     if(changed&&hist.length>lastLen&&lastLen>=0)showRep=hist.length-1;const anim=changed&&prev&&hist.length===prev.s.hist.length+1;lastLen=hist.length;
     const arrows=s.over?[]:[...orderArrows(e,'blue',curOrder('blue')?.o),...orderArrows(e,'red',curOrder('red')?.o)];
     if(changed||!lastDesc)render3D(tl,'truth',arrows,anim,prev);else{lastDesc.arrows=arrows;W.arrows(arrows);}
@@ -326,7 +339,7 @@ if(role==='ref'){
       <p class="note">這個畫面看得到雙方全部部署與命令，請不要投影。</p>
       <div class="row"><a class="btn" href="${esc(link('qr'))}" target="_blank" rel="noopener" style="text-align:center;text-decoration:none">QR 碼頁</a><a class="btn" href="${esc(link('proj'))}" target="_blank" rel="noopener" style="text-align:center;text-decoration:none">投影畫面</a></div>`;
     if(s.over)h+=endCard(tl,'truth','<button type="button" class="btn" id="bRestart">再開一局</button>');
-    else{h+=`<div class="card"><p class="kick">第 ${s.r+1} 回合</p><div class="stat"><span class="k">藍軍</span><span>${st('blue')}<br><span class="mini">指揮官${alive(cmd.blue)?'在線上':'不在線上'}</span></span><span class="k">紅軍</span><span>${st('red')}<br><span class="mini">指揮官${alive(cmd.red)?'在線上':'不在線上'}</span></span></div>
+    else{h+=`<div class="card"><p class="kick">第 ${s.r+1} 回合</p><div class="stat"><span class="k">藍軍</span><span>${st('blue')}<br><span class="mini">指揮官${aliveS('blue')?'在線上':'不在線上'}</span></span><span class="k">紅軍</span><span>${st('red')}<br><span class="mini">指揮官${aliveS('red')?'在線上':'不在線上'}</span></span></div>
         <button type="button" class="send ${both?'':''}" id="bSettle" ${both?'':'disabled'}>${both?'結算本回合':'等雙方都下令'}</button>
         <label class="mini"><input type="checkbox" id="cAuto" ${autoRes?'checked':''}> 雙方都送出後 3 秒自動結算</label>
         <label class="mini"><input type="checkbox" id="cAiB" ${cfg.ai.blue?'checked':''}> 藍軍由電腦下令</label><label class="mini"><input type="checkbox" id="cAiR" ${cfg.ai.red?'checked':''}> 紅軍由電腦下令</label>
@@ -334,7 +347,7 @@ if(role==='ref'){
     if(showRep>=0)h+=reportCard(s,showRep,'truth');
     h+=`<div class="card"><p class="kick">實際兵力（只有老師看得到）</p><div class="sit"><div>藍軍：中部 ${s.B.M}、後陣 ${s.B.D}、左翼 ${s.B.W.L.n}、右翼 ${s.B.W.R.n}；兩翼${s.B.W.L.pos==='flank'?'在敵陣兩側':'在後方'}${s.B.W.L.cut?'（斷絕）':''}</div><div>紅軍：左區 ${s.R.F.L}、中區 ${s.R.F.C}、右區 ${s.R.F.R}；預備隊 ${s.R.resN} 在${RN[s.R.res]}</div></div></div>`;
     h+=fullLog(s,'truth');
-    $('#side').innerHTML=h;
+    paintSide(h,!!anim);
     const b=$('#bSettle');if(b)b.onclick=settle;
     const ca=$('#cAuto');if(ca)ca.onchange=()=>{autoRes=ca.checked;store.set('goose-auto',autoRes?'1':'0');draw(null,false);};
     const setAI=(k,v)=>be.set('cfg',{...cfg,ai:{...cfg.ai,[k]:v}});
@@ -347,7 +360,7 @@ if(role==='ref'){
 /* ====================== 投影 ====================== */
 if(role==='proj'){
   let showRep=-1,lastLen=-1;setInterval(()=>be.set('seen/proj',Date.now()),10000);be.set('seen/proj',Date.now());
-  function draw(prev,changed){if(!tl)return;const e=tl[tl.length-1],s=e.s;
+  function draw(prev,changed){if(!tl){paintSide(waitHtml('proj'));return;}const e=tl[tl.length-1],s=e.s;
     if(changed&&hist.length>lastLen&&lastLen>=0)showRep=hist.length-1;if(changed&&hist.length===0)showRep=-1;const anim=changed&&prev&&hist.length===prev.s.hist.length+1;lastLen=hist.length;
     if(changed||!lastDesc)render3D(tl,'proj',[],anim,prev);
     const st=sd=>curOrder(sd)||cfg.ai[sd]?'<span class="okc">已下令 ✓</span>':'<span class="waitc">思考中…</span>';
@@ -357,7 +370,7 @@ if(role==='proj'){
     if(showRep>=0&&!s.over)h+=reportCard(s,showRep,'proj');
     if(!s.over)h+=sitCard(e,'proj')+`<p class="mini">投影畫面只顯示雙方都知道的事：藍軍集中到中部後方的曲不顯示；紅軍預備隊顯示的是藍軍斥候回報的位置（晚一回合）。結束後全部揭曉。</p>`;
     h+=fullLog(s,s.over?'truth':'proj');
-    $('#side').innerHTML=h;const rv=$('#bReveal');if(rv)rv.onclick=()=>showReveal(tl[tl.length-1]);}
+    paintSide(h,!!anim);const rv=$('#bReveal');if(rv)rv.onclick=()=>showReveal(tl[tl.length-1]);}
   onState.push(draw);draw(null,true);return;}
 
 /* ====================== 藍軍／紅軍指揮 ====================== */
@@ -366,9 +379,9 @@ if(side){
   try{if(!sessionStorage.getItem('goose-help-'+side+room)){sessionStorage.setItem('goose-help-'+side+room,'1');helpOpen=true;}}catch(e){helpOpen=true;}
   const isCmd=()=>cmd[side]&&cmd[side].id===myId;
   const claim=()=>be.set('cmd/'+side,{id:myId,t:Date.now()});
-  setTimeout(()=>{if(!alive(cmd[side]))claim();},600);
-  setInterval(()=>{if(isCmd())claim();else if(!alive(cmd[side]))claim();},10000);
-  function draw(prev,changed){if(!tl)return;const e=tl[tl.length-1],s=e.s;
+  setTimeout(()=>{if(!aliveS(side))claim();},600);
+  setInterval(()=>{if(isCmd())claim();else if(!aliveS(side))claim();},10000);
+  function draw(prev,changed){if(!tl){paintSide(waitHtml(side));return;}const e=tl[tl.length-1],s=e.s;
     if(changed&&hist.length>lastLen&&lastLen>=0){showRep=hist.length-1;draft={};}if(changed&&hist.length===0){showRep=-1;draft={};}
     const anim=changed&&prev&&hist.length===prev.s.hist.length+1;lastLen=hist.length;
     const mine=curOrder(side);if(mine&&!draft.__touched&&!draft.c&&!draft.f){draft={...mine.o};}
@@ -377,12 +390,12 @@ if(side){
     if(changed||!lastDesc)render3D(tl,side,arrows,anim,prev);else{lastDesc.arrows=arrows;W.arrows(arrows);}
     const can=isCmd();
     let h=`<div class="head"><span class="who ${side}">${side==='blue'?'你是藍軍・攻方':'你是紅軍・守方'}</span><span class="round">第 ${Math.min(s.r+1,P.ROUNDS)} / ${P.ROUNDS} 回合</span><span class="grow"></span><span class="mini">房號 ${room}</span></div>`;
-    if(!can)h+=`<div class="card"><p>${alive(cmd[side])?'同隊已經有指揮官在下令，你在觀看。':'目前沒有指揮官。'}</p><button type="button" class="btn" id="bClaim">改由我指揮</button></div>`;
+    if(!can)h+=`<div class="card"><p>${aliveS(side)?'同隊已經有指揮官在下令，你在觀看。':'目前沒有指揮官。'}</p><button type="button" class="btn" id="bClaim">改由我指揮</button></div>`;
     if(s.over)h+=endCard(tl,side);
     if(showRep>=0&&!s.over)h+=reportCard(s,showRep,side);
     if(!s.over)h+=sitCard(e,side)+orderCard(e,side,stripD(draft),sent,can,room+side);
     h+=helpCard(side,helpOpen)+fullLog(s,s.over?'truth':side);
-    $('#side').innerHTML=h;
+    paintSide(h,!!anim);
     $('#side').querySelectorAll('.o').forEach(b=>b.onclick=()=>{if(!isCmd())return;draft[b.dataset.g]=b.dataset.v;draft.__touched=1;helpOpen=false;draw(null,false);});
     const sb=$('#bSend');if(sb&&!sb.disabled)sb.onclick=async()=>{const o=stripD(draft);await be.set('orders/'+side,{r:s.r,o,id:myId,t:Date.now()});toast('命令已送出');};
     const bc=$('#bClaim');if(bc)bc.onclick=()=>{claim();toast('現在由你指揮');};
