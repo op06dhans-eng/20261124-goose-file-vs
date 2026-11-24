@@ -323,12 +323,12 @@ const aliveS=sd=>!!cmd[sd]&&Date.now()-cmdSeen[sd]<30000;
 if(role==='ref'){
   let busy=false,autoRes=store.get('goose-auto')==='1',autoT=0,showRep=-1,lastLen=-1;
   await histReady;if(hist==null){await be.set('hist',JSON.stringify([]));}
-  async function settle(){if(busy||!tl)return;const e=tl[tl.length-1];if(e.s.over)return;busy=true;clearTimeout(autoT);
+  async function settle(){if(busy||!tl)return;const e=tl[tl.length-1];if(e.s.over)return;busy=true;clearTimeout(autoT);autoT=0;
     try{const so=clone(e.s);const ob=cfg.ai.blue?GAI.informedB(clone(so)):curOrder('blue')?.o,or=cfg.ai.red?GAI.informedR(clone(so)):curOrder('red')?.o;
       if(!ob||!or){toast('還有一方沒有下令');busy=false;return;}
       await be.set('hist',JSON.stringify([...hist,{bo:{c:ob.c,w:ob.w},ro:{f:or.f,res:or.res}}]));}
     catch(err){toast('結算失敗：'+err.message,5000);}busy=false;}
-  async function restart(){clearTimeout(autoT);await be.set('orders/blue',null);await be.set('orders/red',null);await be.set('hist',JSON.stringify([]));showRep=-1;toast('已重新開局');W.home();}
+  async function restart(){clearTimeout(autoT);autoT=0;await be.set('orders/blue',null);await be.set('orders/red',null);await be.set('hist',JSON.stringify([]));showRep=-1;toast('已重新開局');W.home();}
   function draw(prev,changed){if(!tl){paintSide(waitHtml('ref'));return;}const e=tl[tl.length-1],s=e.s;
     if(changed&&hist.length>lastLen&&lastLen>=0)showRep=hist.length-1;const anim=changed&&prev&&hist.length===prev.s.hist.length+1;lastLen=hist.length;
     const arrows=s.over?[]:[...orderArrows(e,'blue',curOrder('blue')?.o),...orderArrows(e,'red',curOrder('red')?.o)];
@@ -354,7 +354,8 @@ if(role==='ref'){
     const cb=$('#cAiB');if(cb)cb.onchange=()=>setAI('blue',cb.checked);const cr=$('#cAiR');if(cr)cr.onchange=()=>setAI('red',cr.checked);
     $('#side').querySelectorAll('#bRestart').forEach(x=>x.onclick=()=>{if(x.dataset.sure){restart();}else{x.dataset.sure='1';x.textContent='確定重新開局？再按一次';}});
     const rv=$('#bReveal');if(rv)rv.onclick=()=>showReveal(tl[tl.length-1]);
-    clearTimeout(autoT);if(autoRes&&both&&!s.over)autoT=setTimeout(settle,3000);}
+    // 自動結算：條件成立後倒數 3 秒；倒數中畫面重畫不會重新計時
+    if(autoRes&&both&&!s.over){if(!autoT)autoT=setTimeout(()=>{autoT=0;settle();},3000);}else{clearTimeout(autoT);autoT=0;}}
   onState.push(draw);draw(null,true);return;}
 
 /* ====================== 投影 ====================== */

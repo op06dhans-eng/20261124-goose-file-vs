@@ -2,7 +2,7 @@
 const H=require('./h.js');
 const RES={後:'rear',中:'center',翼:'flanks'};
 (async()=>{const {b,errs,mkctx,page}=await H.open();const ctx=await mkctx();const room='T'+Math.random().toString(36).slice(2,6).toUpperCase();
-const q=r=>`?role=${r}&room=${room}&local=1`;const note=[];const T0=Date.now();const log=m=>console.log(((Date.now()-T0)/1000).toFixed(0)+'s',m);const fail=m=>{errs.push('流程: '+m);log('✗ '+m);};
+const q=r=>`?role=${r}&room=${room}${process.env.FB?'':'&local=1'}`;const note=[];const T0=Date.now();const log=m=>console.log(((Date.now()-T0)/1000).toFixed(0)+'s',m);const fail=m=>{errs.push('流程: '+m);log('✗ '+m);};
 // 1. 學生比老師早進來：要看到「等待老師開局」
 const blue=await page(ctx,q('blue'),{width:390,height:844},'藍軍(手機直式)');
 const red=await page(ctx,q('red'),{width:844,height:390},'紅軍(手機橫式)');
@@ -10,8 +10,9 @@ const proj=await page(ctx,q('proj'),{width:1280,height:720},'投影');
 for(const [n,p] of [['藍',blue],['紅',red],['投影',proj]]){const t=await p.innerText('#side');if(!t.includes('等待老師開局'))fail(n+' 沒有顯示等待老師開局');}
 const qr=await page(ctx,q('qr'),{width:1280,height:720},'QR頁');
 const ref=await page(ctx,q('ref'),{width:1280,height:720},'裁判');
-log('五個畫面已開');await ref.waitForTimeout(1200);
-for(const [n,p] of [['藍',blue],['紅',red]]){const t=await p.innerText('#side');if(!t.includes('第 1 回合'))fail(n+' 老師開局後沒有自動開始');}
+log('五個畫面已開');await ref.waitForFunction(()=>document.querySelector('#bSettle'),null,{timeout:30000});await ref.waitForTimeout(1500);
+if(process.env.DBG){console.log('REF',(await ref.innerText('#side')).slice(0,60).replace(/\n/g,'|'));console.log(await blue.evaluate(()=>JSON.stringify(Object.entries(localStorage))));console.log(await ref.evaluate(()=>location.href));}
+for(const [n,p] of [['藍',blue],['紅',red]]){const t=await p.innerText('#side');if(!t.includes('第 1 回合'))fail(n+' 老師開局後沒有自動開始：'+t.slice(0,300).replace(/\n/g,'|'));}
 // QR 頁：三個分頁、加入狀態
 let t=await qr.innerText('#page');if(!(t.match(/已加入/g)||[]).length===2)fail('QR 頁沒有顯示雙方已加入');if(!t.includes('已開啟'))fail('QR 頁沒有顯示投影已開啟');
 for(const k of['red','proj','blue']){await qr.click(`[data-t="${k}"]`);const svg=await qr.$('.qrbox svg');if(!svg)fail('QR 碼沒畫出來 '+k);const u=await qr.innerText('.qrbox .url');if(!u.includes('role='+k))fail('QR 網址不對 '+k);}

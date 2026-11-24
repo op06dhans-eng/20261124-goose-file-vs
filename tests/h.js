@@ -1,19 +1,34 @@
 const {chromium}=require('playwright');const fs=require('fs'),path=require('path');
 const SP='/tmp/claude-0/-home-claude/a4533160-6b0f-597e-b303-f910e9edaba8/scratchpad';
 const SITE=process.env.SITE||'/home/claude/goosevs/site';const SINGLE=process.env.SINGLE||'';
+// 模擬 Firebase：非同步、有延遲、資料經 JSON 往返；用來測試連線版的程式路徑（真的資料庫在這個環境連不到）
+const FBMOCK=`
+const bc=new BroadcastChannel('fbmock');const subs={};
+const norm=v=>v===undefined?null:JSON.parse(JSON.stringify(v));
+const read=p=>{const v=localStorage.getItem('fb:'+p);return v==null?null:JSON.parse(v);};
+const fire=p=>setTimeout(()=>(subs[p]||[]).forEach(cb=>cb({val:()=>read(p)})),20+Math.random()*150);
+bc.onmessage=e=>fire(e.data);
+export function getDatabase(){return {};}
+export function ref(db,p){return {p};}
+export function onValue(r,cb){if(r.p==='.info/connected'){setTimeout(()=>cb({val:()=>true}),50);return;}(subs[r.p]||(subs[r.p]=[])).push(cb);setTimeout(()=>cb({val:()=>read(r.p)}),80+Math.random()*250);}
+export function set(r,v){return new Promise(res=>setTimeout(()=>{v=norm(v);if(v===null)localStorage.removeItem('fb:'+r.p);else localStorage.setItem('fb:'+r.p,JSON.stringify(v));bc.postMessage(r.p);fire(r.p);res();},30+Math.random()*120));}
+`;
 exports.URL0=SINGLE?('file://'+SINGLE):'http://x/';
-exports.open=async function(){const b=await chromium.launch({args:['--use-gl=swiftshader','--enable-unsafe-swiftshader','--allow-file-access-from-files']});
+exports.open=async function(){const b=await chromium.launch({args:['--use-gl=swiftshader','--enable-unsafe-swiftshader','--allow-file-access-from-files','--disable-background-timer-throttling','--disable-backgrounding-occluded-windows','--disable-renderer-backgrounding']});
   const errs=[];
   const mkctx=async vp=>{const ctx=await b.newContext({viewport:vp||{width:1280,height:720}});
     await ctx.route('**/*',r=>{const u=r.request().url();
       if(u.startsWith('file://')||u.startsWith('blob:'))return r.continue();
       if(SINGLE)return r.abort();   // 單一檔：完全不給網路
+      if(process.env.FB&&u.includes('firebase-app.js'))return r.fulfill({body:'export function initializeApp(c){return {c};}',contentType:'application/javascript',headers:{'access-control-allow-origin':'*'}});
+      if(process.env.FB&&u.includes('firebase-database.js'))return r.fulfill({body:FBMOCK,contentType:'application/javascript',headers:{'access-control-allow-origin':'*'}});
       if(u.includes('three.min.js'))return r.fulfill({body:fs.readFileSync(SP+'/three.min.js'),contentType:'application/javascript'});
       if(u.includes('qrcode.js')&&u.includes('jsdelivr'))return r.fulfill({body:fs.readFileSync(SP+'/qrcode.js'),contentType:'application/javascript'});
       if(u.startsWith('http://x/')){let p=new URL(u).pathname;if(p==='/')p='/index.html';const f=path.join(SITE,decodeURIComponent(p));if(fs.existsSync(f))return r.fulfill({body:fs.readFileSync(f),contentType:f.endsWith('.js')?'application/javascript':'text/html'});}
       return r.abort();});
     return ctx;};
   const page=async(ctx,q,vp,name)=>{const p=await ctx.newPage();if(vp)await p.setViewportSize(vp);const nm=name||q;
+    if(process.env.FB){const w=p.waitForTimeout.bind(p);p.waitForTimeout=ms=>w(ms+1200);}
     p.on('pageerror',e=>errs.push(nm+' 程式錯誤: '+e.message));
     p.on('console',m=>{if(m.type()==='error'&&!/Failed to load resource|ERR_FAILED|net::/.test(m.text()))errs.push(nm+' console: '+m.text());});
     await p.goto(exports.URL0+q);await p.waitForTimeout(900);return p;};
