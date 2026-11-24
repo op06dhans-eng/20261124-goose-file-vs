@@ -3,7 +3,7 @@
 
 // 戰後檢討：依這一局實際的命令，自動產生解說（不是預先寫死的劇本）
 const R=(typeof module!=='undefined'&&module.exports)?require('./rules.js'):root.GR;
-const NM={c:{待:'中部待命',纏:'中部纏住',攻:'中部猛攻'},w:{梯:'兩翼梯次在後',斜:'兩翼依序斜出',急:'兩翼急進包抄',收:'兩翼收攏側擊',集:'後曲向中部集中'},
+const NM={c:{待:'中部待命',纏:'中部接戰牽制',攻:'中部猛攻'},w:{梯:'兩翼梯次在後',斜:'兩翼依序斜出',急:'兩翼急進包抄',收:'兩翼收攏側擊',集:'後曲向中部集中'},
   f:{頂:'前排頂住',壓:'前排前壓',探:'派人試探'},res:{rear:'預備隊居後',center:'預備隊調往中央',flanks:'預備隊守兩側'}};
 const bName=o=>NM.c[o.c]+'、'+NM.w[o.w],rName=o=>NM.f[o.f]+'、'+NM.res[o.res];
 function replay(hist){let s=R.init();const states=[s];for(const h of hist){s=R.step(s,h.bo,h.ro);states.push(s);}return states;}
