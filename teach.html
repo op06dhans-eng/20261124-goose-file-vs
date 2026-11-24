@@ -1,0 +1,663 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>陣法・鴈行</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@700;900&display=swap">
+<style>
+/* 版面：全螢幕立體平原；左上主將、上方標題、右上進度與兵書、左下陣形輪廓、右側（直式在下方）抉擇卡。沿用陣法立體版的單一暗色主題。 */
+:root{
+  --ink:#15110e;--panel:rgba(22,17,14,.8);--paper:#f2e7d1;--dim:#bfae90;--bronze:#d6a94e;--gold:#ffe3a8;--cinnabar:#cf3a2b;--line:#5a4630;--navy:#1d3560;
+  --display:"Noto Serif TC","Noto Serif CJK TC","Songti TC","PMingLiU","SimSun",serif;
+  --ui:system-ui,-apple-system,"PingFang TC","Microsoft JhengHei",sans-serif;
+  color-scheme:dark;
+}
+[hidden]{display:none!important}
+html,body{height:100%;margin:0;overflow:hidden;background:var(--ink);color:var(--paper);font-family:var(--ui);-webkit-tap-highlight-color:transparent}
+/* 版面：戰場與側欄分開，任何框框都不蓋在戰場上。橫式：左邊戰場、右邊側欄；直式：上面戰場、下面側欄。 */
+#stage{position:fixed;left:0;top:0;bottom:0;right:var(--sideW,360px)}
+#gl{width:100%;height:100%;display:block}
+#side{position:fixed;top:0;right:0;bottom:0;width:var(--sideW,360px);z-index:1;box-sizing:border-box;display:flex;flex-direction:column;gap:8px;overflow:hidden;
+  padding:calc(10px + env(safe-area-inset-top,0px)) calc(10px + env(safe-area-inset-right,0px)) calc(10px + env(safe-area-inset-bottom,0px)) 10px;
+  background:linear-gradient(180deg,#1d150f,#140f0b);border-left:1px solid var(--line)}
+:root{--sideW:min(380px,40vw)}
+.pnl{background:var(--panel);border:1px solid rgba(214,169,78,.35);border-radius:10px}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible{outline:2px solid var(--bronze);outline-offset:3px}
+.sh{display:flex;align-items:center;gap:8px;flex:none}
+.seal{width:34px;height:34px;flex:none;border-radius:50%;border:2px solid var(--bronze);background:var(--navy);display:grid;place-items:center;font:900 19px var(--display);color:#e8c870}
+.ttl{flex:1;min-width:0;line-height:1.25}
+.ttl b{display:block;font:900 15px var(--display);letter-spacing:.14em;white-space:nowrap}
+.ttl small{display:block;font-size:11px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tools{display:flex;gap:6px;flex:none}
+.tbtn{padding:5px 10px;font:700 13px var(--display);letter-spacing:.12em;min-height:30px}
+.prog{display:flex;gap:3px;flex:none;flex-wrap:wrap}
+.prog span{font:900 11px var(--display);width:19px;height:19px;display:grid;place-items:center;border-radius:50%;border:1px solid rgba(242,231,209,.25);color:var(--dim);background:rgba(0,0,0,.4)}
+.prog span.now{border-color:var(--bronze);color:#fff3cf;background:rgba(214,169,78,.35)}
+.prog span.ok{background:rgba(214,169,78,.85);color:#2a1a08;border-color:#ffe29a}
+.sm{display:flex;gap:8px;flex:none;align-items:stretch}
+.smr{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px}
+.dk.more::after,.foe.more::after{content:'▼ 往下捲還有內容';position:sticky;bottom:-12px;margin:0 -14px -12px;padding:6px 0 7px;text-align:center;font-size:12px;letter-spacing:.1em;color:#ffe08a;background:linear-gradient(180deg,rgba(28,20,14,0),rgba(28,20,14,.97) 45%);pointer-events:none;flex:none}
+.mm{flex:none;padding:5px}
+.mm canvas{display:block;width:150px;height:104px}
+.mm small{display:block;font-size:10px;color:var(--dim);text-align:center;margin-top:3px;letter-spacing:.15em;white-space:nowrap}
+.mm small.fo{color:#ff9a7a}
+.cap{flex:1;min-width:0;padding:7px 10px;font-size:13px;line-height:1.55;display:block}
+.cap em{font-style:normal;color:var(--bronze);font-weight:700;margin-right:6px}
+/* 抉擇卡與停格卡：佔滿側欄剩下的高度，內容多就在卡片裡捲動 */
+.dk,.foe{flex:1;min-height:0;overflow:auto;padding:12px 14px;display:flex;flex-direction:column;gap:10px;line-height:1.6;box-sizing:border-box;background:rgba(28,20,14,.9)}
+.kick{margin:0;font-size:12px;letter-spacing:.25em;color:var(--dim)}
+.dk h2{margin:0;font:900 19px var(--display);color:var(--bronze);letter-spacing:.06em;text-wrap:balance}
+.dk p{margin:0;font-size:14px}
+.fsay{border-left:3px solid #ff6a4a;background:rgba(120,30,20,.32);padding:6px 10px;border-radius:0 4px 4px 0;font:700 14.5px/1.6 var(--display);color:#ffd8c8}
+.fsay b{display:block;font:700 11px var(--ui);letter-spacing:.25em;color:#ff9a7a}
+.dk .scout{display:block;border:1px dashed rgba(214,169,78,.6);border-radius:6px;padding:7px 10px;font-size:13.5px;background:rgba(214,169,78,.08)}
+.dk .scout b{color:#ffe08a;font-weight:700;margin-right:4px}
+.opts{display:grid;gap:7px}
+.opt{text-align:left;border:1px solid var(--line);background:#2a2018;border-radius:6px;padding:9px 12px;display:grid;gap:2px}
+.opt b{font:900 17px var(--display);letter-spacing:.12em;color:#fff1d0}
+.opt span{font-size:12.5px;color:var(--dim);line-height:1.5}
+.opt:hover{border-color:var(--bronze);background:#34271c}
+.opt:disabled{opacity:.5;cursor:default}
+.qt{border-left:3px solid var(--bronze);padding:6px 10px;background:rgba(0,0,0,.25);border-radius:0 4px 4px 0;font-size:13px;display:grid;gap:3px}
+.qt b{font:700 15px var(--display);color:var(--gold)}
+.qt span{color:var(--dim);font-size:12.5px;line-height:1.55}
+.qt i{font-style:normal;color:var(--bronze);font-size:11.5px}
+.hint{font-size:12.5px;color:var(--dim);margin:0}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+.chb{font:900 15px var(--display);letter-spacing:.1em;padding:8px 14px;border-radius:4px;border:1px solid var(--line);background:#2a2018}
+.chb.main{background:linear-gradient(180deg,#e04a35,#a82518);border:0;color:#fff;box-shadow:0 3px 0 #5e140c}
+.chb.gong{background:#3a3226;border-color:#8a7a5a}
+/* 敵將視角停格 */
+.foe{background:rgba(48,14,10,.9);border-color:rgba(255,138,102,.55)}
+.foe .kick{color:#f0a88a}
+.foe h2{margin:0;font:900 20px/1.5 var(--display);color:#ffe3c8;text-wrap:balance}
+.foe p{margin:0;font-size:14px;line-height:1.7}
+.vote{display:flex;gap:10px;flex-wrap:wrap}
+.vote span{font:900 16px var(--display);padding:6px 14px;border-radius:4px;border:1px solid rgba(255,138,102,.5);color:#ffd8c4}
+/* 封面、兵書、結算（全螢幕卡片） */
+.over{position:fixed;inset:0;z-index:2;overflow:auto;background:rgba(12,9,7,.86);padding-block:calc(16px + env(safe-area-inset-top,0px)) calc(16px + env(safe-area-inset-bottom,0px));padding-inline:16px;box-sizing:border-box}
+.card{max-width:940px;margin:0 auto;background:#1c140e;border:1px solid var(--line);border-radius:10px;padding:20px 22px;display:grid;gap:14px;line-height:1.7;box-sizing:border-box}
+.card h2{margin:0;font:900 26px var(--display);color:var(--bronze)}
+.card h3{margin:.3em 0 0;font:900 19px var(--display);color:var(--bronze)}
+.card p{margin:0}
+#cover{background:linear-gradient(90deg,rgba(10,6,3,.94),rgba(10,6,3,.78) 55%,rgba(10,6,3,.5));display:grid;align-items:center}
+.cv{max-width:620px;display:grid;gap:12px;padding-left:min(4vw,40px)}
+.cv-k{font-size:13px;letter-spacing:.4em;color:var(--dim);margin:0}
+.cv-t{display:flex;align-items:center;gap:16px}
+.cv-big{font:900 clamp(76px,15vh,132px)/.95 var(--display);background:linear-gradient(180deg,#fff1c4 0%,#e8b84e 45%,#9a5a18 100%);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 4px 0 #3a0e06)}
+.cv-seal{font:900 15px/1.15 var(--display);color:#fff3dc;background:#a8261a;border:2px solid #f0c860;padding:6px 7px;border-radius:4px;transform:rotate(-4deg);box-shadow:0 3px 0 #4a0e08}
+.cv-sub{margin:0;font:900 20px var(--display);letter-spacing:.4em}
+.cv p{font-size:15px;line-height:1.8;max-width:34em}
+.cv p b{color:#ffe08a;font-weight:700}
+.cv .q{font:700 15px var(--display);color:var(--gold)}.cv .q span{font:400 12px var(--ui);color:var(--dim);margin-left:.5em}
+.go{justify-self:start;font:900 20px var(--display);letter-spacing:.4em;padding:10px 24px 10px 32px;border:1px solid #f0c860;border-radius:4px;color:#fff;background:linear-gradient(180deg,#e04a35,#a82518);box-shadow:0 4px 0 #5e140c}
+.lines{padding-left:1.4em;margin:0}.lines li{margin:.5em 0;padding:4px 6px;border-radius:4px}.lines b{font:700 16px var(--display);color:var(--gold);display:block}.lines span{color:var(--dim);font-size:14px;display:block}
+.lines li.hl{background:rgba(214,169,78,.2);outline:1px solid var(--bronze)}
+.bk-top{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.strip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.fr{display:grid;gap:4px;justify-items:center;text-align:center}
+.fr canvas{width:100%;max-width:200px;aspect-ratio:150/104;height:auto;border-radius:6px;border:1px solid var(--line)}
+.fr b{font:900 16px var(--display);color:var(--gold);letter-spacing:.15em}
+.fr span{font-size:12px;color:var(--dim);min-height:1.5em}
+.fr.tag span{color:#ffe08a}
+.arrow{grid-column:1/-1;display:flex;justify-content:space-between;gap:12px;font-size:12px;color:var(--dim);border-top:1px solid var(--line);padding-top:6px}
+.tw{overflow-x:auto}
+table{border-collapse:collapse;width:100%;min-width:620px;font-size:14px}
+th,td{border-bottom:1px solid var(--line);padding:8px;text-align:left;vertical-align:top}
+th{color:var(--dim);font-weight:400;font-size:12px;letter-spacing:.15em}
+td.n{font:900 16px var(--display);color:var(--gold);white-space:nowrap}
+.stg{display:inline-block;font:700 12px var(--ui);padding:2px 8px;border-radius:3px;white-space:nowrap}
+.stg.s0{background:#2b3d5c;color:#cfe0ff}.stg.s1{background:#5a4a20;color:#ffe9a8}.stg.s2{background:#6a2418;color:#ffd0c0}
+.ch{display:inline-block;margin:2px 4px 2px 0;font-size:12px;padding:1px 7px;border-radius:3px;background:rgba(214,169,78,.28);color:#ffe08a}
+.ch.re{background:rgba(207,58,43,.28);color:#ffb39a;text-decoration:line-through;text-decoration-color:rgba(255,179,154,.6)}
+.srcb{font:700 12px var(--ui);padding:3px 9px;border-radius:4px;border:1px solid var(--bronze);background:rgba(214,169,78,.12);color:#ffe29a;white-space:nowrap}
+.stats{display:flex;gap:24px;flex-wrap:wrap}.stats small{display:block;font-size:12px;letter-spacing:.15em;color:var(--dim)}.stats b{font:900 22px var(--display);font-variant-numeric:tabular-nums}
+.say{font:700 17px/1.7 var(--display);color:var(--gold);margin:0}
+.note{font-size:13px;color:var(--dim);margin:0}
+@media (orientation:portrait){
+  #stage{right:0;bottom:auto;height:42%}
+  #side{top:42%;width:auto;left:0;border-left:0;border-top:1px solid var(--line);padding-top:8px}
+  .mm canvas{width:120px;height:83px}
+  .cap{font-size:12px}
+  .strip{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .cv{padding-left:0}
+}
+@media (max-height:500px) and (orientation:landscape){
+  :root{--sideW:min(360px,50vw)}
+  #side{display:grid;grid-template-columns:auto minmax(0,1fr);grid-template-rows:auto auto minmax(0,1fr);gap:5px 8px;padding-top:calc(6px + env(safe-area-inset-top,0px));padding-bottom:calc(6px + env(safe-area-inset-bottom,0px))}
+  .sm,.smr{display:contents}
+  .mm{grid-column:1;grid-row:1/3}
+  .sh{grid-column:2;grid-row:1}.seal{display:none}
+  .prog{grid-column:2;grid-row:2;align-self:center}
+  .cap{display:none!important}
+  .dk,.foe{grid-column:1/-1;grid-row:3}
+  .seal{width:28px;height:28px;font-size:16px}
+  .ttl b{font-size:13px}.ttl small{display:none}
+  .tbtn{padding:3px 8px;min-height:26px;font-size:12px}
+  .prog span{width:18px;height:18px;font-size:10px}
+  .mm{padding:3px}.mm canvas{width:96px;height:66px}.mm small{font-size:9px;margin-top:1px}
+  .cap{font-size:12px;padding:4px 8px;line-height:1.4;flex:1}
+  .dk,.foe{padding:7px 11px;gap:4px}
+  .dk.more::after,.foe.more::after{margin:0 -11px -8px;bottom:-8px}
+  .dk h2,.foe h2{font-size:16px}
+  .dk p,.foe p{font-size:12.5px;line-height:1.45}
+  .kick{font-size:11px}
+  .dk .scout{font-size:12.5px;padding:5px 8px}
+  .opt{padding:4px 10px;gap:0}.opts{gap:5px}.opt b{font-size:15px}.opt span{font-size:12px;line-height:1.4}
+  .fsay{font-size:13.5px;padding:5px 9px}
+  .cv-big{font-size:72px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div id="stage"><canvas id="gl"></canvas></div>
+<aside id="side">
+  <div class="sh"><div class="seal">鴈</div><div class="ttl"><b>第六段・鴈行</b><small>你是鴈行陣（藍衣）主將，對面是方陣（紅衣）</small></div>
+    <div class="tools"><button type="button" class="pnl tbtn" id="bBook">兵書</button><button type="button" class="pnl tbtn" id="bMute">聲</button></div></div>
+  <div class="sm"><div class="pnl mm"><canvas id="mm" width="300" height="208"></canvas><small id="mmL">陣形輪廓</small></div><div class="smr"><div class="prog" id="prog"></div><div class="pnl cap" id="cap" hidden></div></div></div>
+  <div class="pnl dk" id="dk" hidden></div>
+  <div class="pnl foe" id="foe" hidden></div>
+</aside>
+
+<div class="over" id="cover">
+  <div class="cv">
+    <p class="cv-k">中國戰略思想史・陣法立體版</p>
+    <div class="cv-t"><span class="cv-big">鴈行</span><span class="cv-seal">開局<br>決勝</span></div>
+    <p class="cv-sub">第六段</p>
+    <p class="q">「前行若有雍，後列若貍。」<span>《孫臏兵法・十陣》</span></p>
+    <p>你扮演<b>鴈行陣的主將</b>，指揮藍衣的十個曲（甲至癸，旗分白、黃、青三色）。對面是紅衣的方陣，這是一場<b>虛構的對陣</b>。</p>
+    <p>全程<b>八個抉擇</b>。下令之後，部隊會照你的命令行動。不理想的選擇，看完後果可以回到同一題重選。戰場旁邊的「陣形輪廓」會隨戰況變化，留意它的形狀。</p>
+    <p class="note">取材自課程讀物：曾瑞龍〈鴈行陣是什麼樣子？〉（"Goose File" Formation: What Does It Look Like?，2008）。</p>
+    <button type="button" class="go" id="bGo">出陣</button>
+  </div>
+</div>
+
+<div class="over" id="book" hidden>
+  <div class="card">
+    <div class="bk-top"><h2>兵書</h2><button type="button" class="chb" id="bBookX">回到戰場</button></div>
+    <p class="note">原文依通行本與課程讀物整理；每條下方是白話。印講義前請以銀雀山漢簡整理本、《中國兵書集成》本《武經總要》核對。</p>
+    <ol class="lines" id="bookList"></ol>
+    <button type="button" class="chb main" id="bBookX2" style="justify-self:start">回到戰場</button>
+  </div>
+</div>
+
+<div class="over" id="end" hidden>
+  <div class="card">
+    <p class="kick">關卡結算・第六段　鴈行</p>
+    <h2>同一個陣，四個時刻</h2>
+    <div class="strip" id="strip"></div>
+    <div class="stats" id="stats"></div>
+    <h3>八個抉擇，各在哪一個階段</h3>
+    <div class="tw"><table><thead><tr><th>抉擇</th><th>階段</th><th>你的選擇（依序）</th><th>這一階段的邏輯</th><th>史料</th></tr></thead><tbody id="tbl"></tbody></table></div>
+    <h3>同一份選單，出現兩次</h3>
+    <div class="tw"><table><thead><tr><th>同一道命令</th><th>開局時下（抉擇一）</th><th>決勝時下（抉擇六）</th></tr></thead><tbody id="pair"></tbody></table></div>
+    <p class="say">開局的樣子，像《武經總要》畫的陣圖；決勝的樣子，像藍永蔚說的牛角。曾瑞龍認為，兩種說法描述的是同一個陣的不同時刻。</p>
+    <div class="qt"><b>西方對照：坎尼會戰（前 216 年）</b><span>漢尼拔開局時，中央向羅馬軍凸出，看起來不像要包圍；接戰後中央慢慢後退，最後兩翼合圍。曾瑞龍在文章開頭就用這一仗說明「初始階段」與「決勝時刻」的陣形不同。</span></div>
+    <p class="note">提醒：「決勝時才出現牛角形」是曾瑞龍的推論，他的用詞是兩翼「可能最終包抄」，史料沒有直接寫到。抉擇七的竹簡讀法也未定。</p>
+    <div class="row"><button type="button" class="chb main" id="bAgain">再打一次</button><button type="button" class="chb" id="bEndBook">翻兵書</button></div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(()=>{
+'use strict';
+const $=id=>document.getElementById(id);
+const TAU=Math.PI*2,PI=Math.PI;
+const rand=(a,b)=>a+Math.random()*(b-a);
+const lerp=(a,b,t)=>a+(b-a)*t;
+const clamp=(v,a,b)=>v<a?a:v>b?b:v;
+const angDiff=(a,b)=>{let d=(b-a)%TAU;if(d>PI)d-=TAU;if(d<-PI)d+=TAU;return d;};
+const ease=t=>t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
+const reduceMotion=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+/* ================= 場景（沿用陣法立體版的天色、地面、山與松） ================= */
+const canvas=$('gl');
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.5));
+canvas.addEventListener('webglcontextlost',e=>{e.preventDefault();const c=$('cap');c.hidden=false;c.textContent='畫面資源被手機系統回收了（開太多頁面）。請關閉其他分頁後重新整理這一頁。';},false);
+const scene=new THREE.Scene();
+const HORIZON=0xe2a46a;
+scene.background=new THREE.Color(HORIZON);
+scene.fog=new THREE.Fog(HORIZON,90,230);
+const camera=new THREE.PerspectiveCamera(50,1,.8,400);
+{
+  const g=new THREE.SphereGeometry(260,24,14),p=g.attributes.position,cols=[];
+  const top=new THREE.Color(0x56577f),hor=new THREE.Color(HORIZON),low=new THREE.Color(0xb98058),c=new THREE.Color();
+  for(let i=0;i<p.count;i++){const y=p.getY(i)/260;if(y>=0)c.copy(hor).lerp(top,Math.pow(y,.55));else c.copy(hor).lerp(low,Math.min(1,-y*3));cols.push(c.r,c.g,c.b);}
+  g.setAttribute('color',new THREE.Float32BufferAttribute(cols,3));
+  scene.add(new THREE.Mesh(g,new THREE.MeshBasicMaterial({vertexColors:true,side:THREE.BackSide,fog:false,depthWrite:false})));
+}
+scene.add(new THREE.HemisphereLight(0xffe6c4,0x6a5040,.8));
+const sun=new THREE.DirectionalLight(0xffcf98,.95);sun.position.set(-30,45,22);scene.add(sun);
+const BOX=new THREE.BoxGeometry(1,1,1);
+const matC={};const lam=c=>matC[c]||(matC[c]=new THREE.MeshLambertMaterial({color:c}));
+function noiseTex(base,amt,size,dots){
+  const c=document.createElement('canvas');c.width=c.height=size;const g=c.getContext('2d');
+  g.fillStyle=base;g.fillRect(0,0,size,size);
+  for(let i=0;i<dots;i++){const v=Math.random()-.5,s=Math.random()<.15?4:2;g.fillStyle=v>0?`rgba(255,236,200,${v*amt})`:`rgba(40,22,10,${-v*amt})`;g.fillRect(Math.random()*size|0,Math.random()*size|0,s,s);}
+  const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.magFilter=THREE.NearestFilter;return t;
+}
+const m4=new THREE.Matrix4(),q4=new THREE.Quaternion(),e4=new THREE.Euler(),p4=new THREE.Vector3(),s4=new THREE.Vector3();
+const PM=new THREE.Matrix4(),CM=new THREE.Matrix4();
+function instParts(parts,places){
+  const col=new THREE.Color();
+  for(const pt of parts){
+    const im=new THREE.InstancedMesh(BOX,new THREE.MeshLambertMaterial({color:0xffffff}),places.length);
+    places.forEach((pl,i)=>{
+      e4.set(0,pl.ry||0,0);q4.setFromEuler(e4);p4.set(pl.x,0,pl.z);s4.setScalar(pl.s||1);PM.compose(p4,q4,s4);
+      e4.set(pt.rx||0,pt.ry||0,pt.rz||0);q4.setFromEuler(e4);p4.set(pt.x||0,pt.y||0,pt.z||0);s4.set(pt.w,pt.h,pt.d);CM.compose(p4,q4,s4);
+      m4.multiplyMatrices(PM,CM);im.setMatrixAt(i,m4);col.setHex(pt.c);col.offsetHSL(0,0,rand(-.05,.05));im.setColorAt(i,col);});
+    scene.add(im);
+  }
+}
+{
+  const t=noiseTex('#8f8a52',.5,128,2600);t.repeat.set(60,40);
+  const gm=new THREE.MeshLambertMaterial({color:0xffffff,map:t});
+  const ground=new THREE.Mesh(new THREE.PlaneGeometry(440,320),gm);ground.rotation.x=-Math.PI/2;ground.position.set(0,0,-35);scene.add(ground);
+  const pt=[noiseTex('#7f6244',.5,64,900),noiseTex('#a3a24e',.45,64,900),noiseTex('#b89466',.4,64,700)];
+  for(let i=0;i<70;i++){const x=rand(-150,150),z=rand(-140,50);const m=new THREE.Mesh(new THREE.PlaneGeometry(rand(6,18),rand(6,20)),new THREE.MeshLambertMaterial({map:pt[i%3],transparent:true,opacity:.42}));m.rotation.x=-Math.PI/2;m.rotation.z=rand(0,TAU);m.position.set(x,.006+i*.0002,z);scene.add(m);}
+  const skip=(x,z)=>Math.abs(x)<50&&z>-70&&z<40;
+  const spots=n=>{const o=[];let k=0;while(o.length<n&&k++<n*40){const x=rand(-170,170),z=rand(-160,60);if(!skip(x,z))o.push({x,z,ry:rand(0,TAU),s:rand(.8,1.3)});}return o;};
+  instParts([{w:.26,h:2.2,d:.26,y:1.1,c:0x4a3220},{w:2.0,h:.75,d:2.0,y:2.1,c:0x4a6338},{w:1.5,h:.7,d:1.5,y:2.7,ry:.78,c:0x53703e},{w:1.0,h:.65,d:1.0,y:3.25,c:0x4a6338},{w:.5,h:.6,d:.5,y:3.8,ry:.78,c:0x5a7a44}],spots(150));
+  instParts([{w:1.1,h:.6,d:1,y:.3,c:0x6f7a3a},{w:.7,h:.5,d:.8,y:.7,x:.2,ry:.6,c:0x7d8a40}],spots(170));
+  const im=[];const mount=(x,z,w,h,ry,c)=>{im.push({x,y:h*.22,z,sx:w,sy:h*.44,sz:w,ry,c},{x,y:h*.5,z,sx:w*.7,sy:h*.34,sz:w*.65,ry,c:c+0x090808},{x:x+rand(-3,3),y:h*.74,z,sx:w*.42,sy:h*.3,sz:w*.4,ry:ry+.3,c:c+0x121010});};
+  for(let x=-230;x<=230;x+=11)mount(x+rand(-3,3),-180+rand(-10,10),rand(22,36),rand(26,52),rand(-.3,.3),0x6a6a7a);
+  for(let x=-230;x<=230;x+=14)mount(x+rand(-3,3),110+rand(-8,8),rand(20,30),rand(20,36),rand(-.3,.3),0x6a6a7a);
+  const mm=new THREE.InstancedMesh(BOX,new THREE.MeshLambertMaterial({color:0xffffff}),im.length);const cc=new THREE.Color();
+  im.forEach((o,i)=>{e4.set(0,o.ry,0);q4.setFromEuler(e4);p4.set(o.x,o.y,o.z);s4.set(o.sx,o.sy,o.sz);m4.compose(p4,q4,s4);mm.setMatrixAt(i,m4);cc.setHex(o.c);mm.setColorAt(i,cc);});
+  scene.add(mm);
+}
+
+/* ================= 部隊 ================= */
+// 我軍十個曲（甲至癸，每曲 4×4 人）＋後騎六騎；敵軍方陣 12×8 人＋兩支預備隊（RL、RR，各 4×3 人）
+const QU=['甲','乙','丙','丁','戊','己','庚','辛','壬','癸'];
+const SIDE={甲:'L',乙:'L',丙:'L',丁:'L',戊:'M',己:'M',庚:'R',辛:'R',壬:'R',癸:'R'};
+const FLAG={L:'#ece6d6',M:'#d8aa2a',R:'#2f7f7a'};
+const FLAGINK={L:'#2a1a10',M:'#2a1a10',R:'#f2e7d1'};
+const SP=1.3,GR=4,EC=12,ER=8,ESP=1.2,EZ=-25;
+const men=[];
+QU.forEach(u=>{for(let r=0;r<GR;r++)for(let c=0;c<GR;c++)men.push({u,lx:(c-1.5)*SP+rand(-.12,.12),lz:(r-1.5)*SP+rand(-.12,.12),team:0});});
+for(let r=0;r<ER;r++)for(let c=0;c<EC;c++)men.push({team:1,c,r,bx:(c-(EC-1)/2)*ESP+rand(-.1,.1),bz:EZ+(r-(ER-1)/2)*ESP+rand(-.1,.1),s1:Math.random(),s2:Math.random()});
+QU.forEach(u=>{men.filter(m=>m.u===u).map(m=>({m,v:m.lz+Math.random()*1.6})).sort((a,b)=>a.v-b.v).forEach((o,i)=>o.m.fk=i);});
+['RL','RR'].forEach(u=>{for(let r=0;r<3;r++)for(let c=0;c<4;c++)men.push({team:1,res:u,lx:(c-1.5)*1.2+rand(-.1,.1),lz:(r-1)*1.2+rand(-.1,.1),s1:Math.random(),s2:Math.random()});});
+const N=men.length;
+const PARTS=[
+  {k:'legL',w:.22,h:.74,d:.26,x:-.13,y:.37,c:[0x2c2a30,0x3a2a22]},
+  {k:'legR',w:.22,h:.74,d:.26,x:.13,y:.37,c:[0x2c2a30,0x3a2a22]},
+  {k:'torso',w:.56,h:.62,d:.34,y:1.05,c:[0x3f6bb0,0xa83a28]},
+  {k:'head',w:.36,h:.36,d:.36,y:1.56,c:[0xe0b48a,0xd8ac84]},
+  {k:'helm',w:.42,h:.2,d:.42,y:1.8,c:[0x2b3d5c,0x5a2318]},
+  {k:'spear',w:.06,h:2.4,d:.06,x:.36,y:1.4,c:[0x4a3020,0x4a3020]},
+  {k:'tip',w:.1,h:.3,d:.05,x:.36,y:2.72,c:[0xdfe3e6,0xdfe3e6]}
+];
+const IMS=PARTS.map(pt=>{const im=new THREE.InstancedMesh(BOX,new THREE.MeshLambertMaterial({color:0xffffff}),N);const col=new THREE.Color();
+  men.forEach((m,i)=>{col.setHex(m.res&&pt.k==='torso'?0x8e3020:pt.c[m.team]);col.offsetHSL(0,0,rand(-.04,.04));im.setColorAt(i,col);});im.instanceMatrix.setUsage(THREE.DynamicDrawUsage);scene.add(im);return im;});
+const CAV=[];for(let i=0;i<6;i++){const g=new THREE.Group();
+  const add=(w,h,d,x,y,z,c)=>{const m=new THREE.Mesh(BOX,lam(c));m.scale.set(w,h,d);m.position.set(x,y,z);g.add(m);};
+  add(.7,.8,1.9,0,1.25,0,0x6a4a30);add(.32,.7,.4,0,1.8,-1.0,0x6a4a30);add(.34,.4,.6,0,2.2,-1.25,0x5a3e28);
+  [[-.25,-.7],[.25,-.7],[-.25,.7],[.25,.7]].forEach(([x,z])=>add(.16,.85,.16,x,.42,z,0x3a2a1c));
+  add(.5,.6,.34,0,2.05,.1,0x3f6bb0);add(.34,.34,.34,0,2.55,.1,0xe0b48a);add(.4,.18,.4,0,2.78,.1,0x2b3d5c);add(.06,2.2,.06,.35,2.6,-.2,0x4a3020);
+  scene.add(g);CAV.push({g,lx:((i%3)-1)*1.8,lz:(Math.floor(i/3)-.5)*2.6});}
+const DRUM=new THREE.Group();{const a=(w,h,d,x,y,z,c)=>{const m=new THREE.Mesh(BOX,lam(c));m.scale.set(w,h,d);m.position.set(x,y,z);DRUM.add(m);};
+  a(2.2,.3,2.6,0,.9,0,0x5a3a22);a(1.3,1.3,1.3,0,1.8,0,0x8a2a1c);a(1.36,.12,1.36,0,2.48,0,0xe0c48a);scene.add(DRUM);}
+function flagTex(txt,bg,fg){const c=document.createElement('canvas');c.width=128;c.height=160;const g=c.getContext('2d');
+  g.fillStyle=bg;g.beginPath();g.moveTo(0,0);g.lineTo(128,0);g.lineTo(128,150);g.lineTo(104,134);g.lineTo(84,150);g.lineTo(64,134);g.lineTo(44,150);g.lineTo(24,134);g.lineTo(0,150);g.closePath();g.fill();
+  g.strokeStyle='rgba(0,0,0,.35)';g.lineWidth=5;g.stroke();
+  g.fillStyle=fg;g.font='900 84px "Noto Serif TC","Songti TC","PMingLiU",serif';g.textAlign='center';g.textBaseline='middle';g.fillText(txt,64,68);
+  return new THREE.CanvasTexture(c);}
+const FLAGLIST=[];
+function mkFlag(txt,bg,fg,h){const pole=new THREE.Mesh(BOX,lam(0x4a3020));pole.scale.set(.09,h,.09);scene.add(pole);
+  const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:flagTex(txt,bg,fg),depthWrite:false}));sp.scale.set(1.5,1.9,1);scene.add(sp);const f={pole,sp,h,txt,bg,fg};FLAGLIST.push(f);return f;}
+const FLAGS={};QU.forEach(u=>FLAGS[u]=mkFlag(u,FLAG[SIDE[u]],FLAGINK[SIDE[u]],4.2));
+const EFLAGS=[-4.2,0,4.2].map(x=>{const f=mkFlag('敵','#a8261a','#ffe3c8',4.6);f.x=x;return f;});
+const RFLAGS={RL:mkFlag('預','#7a2018','#ffe3c8',3.8),RR:mkFlag('預','#7a2018','#ffe3c8',3.8)};
+const BIGF=mkFlag('將','#1d3560','#e8c870',6.2);
+function placeFlag(f,x,z,y0){f.pole.position.set(x,(y0||0)+f.h/2,z);f.sp.position.set(x+.8,(y0||0)+f.h-.75,z);}
+
+/* ================= 陣形：每個時刻各部隊的位置 [x, z, 朝向] ================= */
+const mir=([x,z,r])=>[-x,z,-r];
+const RCORN=[[-11,-35,PI],[11,-35,PI]],RCENT=[[-3.2,-35,PI],[3.2,-35,PI]],RBEH=[[-3.2,-31.6,PI],[3.2,-31.6,PI]];
+const FOE0={dent:0,turn:0,adv:0,rout:0,pinch:0,regroup:0};
+function lay(M,W,cav,res,foe,ov){const o={戊:M[0],己:M[1],丁:W[0],丙:W[1],乙:W[2],甲:W[3],壬:mir(W[0]),癸:mir(W[1]),庚:mir(W[2]),辛:mir(W[3]),騎:cav,RL:res[0],RR:res[1],foe:Object.assign({},FOE0,foe||{}),loss:{}};return Object.assign(o,ov||{});}
+function cl(L){const o={};for(const k in L){const v=L[k];o[k]=Array.isArray(v)?[...v]:(v&&typeof v==='object'?{...v}:v);}return o;}
+function mod(base,ch){const o=cl(typeof base==='string'?LAY[base]:base);for(const k in ch){if(k==='foe')Object.assign(o.foe,ch.foe);else if(k==='loss')Object.assign(o.loss,ch.loss);else o[k]=ch[k];}return o;}
+const MA=[[0,0,0],[0,7,0]],MA2=[[0,-8,0],[0,-1,0]],MB=[[0,-17.5,0],[0,-11,0]];
+const WA=[[-8,6,0],[-14,12,0],[-20,18,0],[-26,24,0]];
+const WB=[[-8,-2,0],[-14,4,0],[-20,10,0],[-26,16,0]];
+const WC=[[-10,-12,-.35],[-17,-8,-.35],[-23,-4,-.35],[-29,0,-.35]];
+const WD=[[-11,-15.5,-.7],[-12.6,-23,-PI/2],[-12.6,-30,-PI/2],[-19,-20,-PI/2]];
+const LAY={
+  A:  lay(MA,WA,[0,15,0],RCORN),
+  A2: lay(MA2,WA,[0,13,0],RCORN),
+  W:  lay(MA,[[-9,-3,0],[-15,-8,0],[-21,-13,0],[-27,-18,0]],[0,15,0],RCORN),
+  K:  lay(MA,WA,[0,-15.5,0],RCORN),
+  B:  lay(MB,WB,[0,3,0],RCORN),
+  Bpush:lay([[0,-22.5,0],[0,-16,0]],WB,[0,3,0],RCORN,{dent:1}),
+  Bback:lay([[0,-5,0],[0,2,0]],[[-8,4,0],[-14,10,0],[-20,16,0],[-26,22,0]],[0,10,0],[[-11,-27,PI],[11,-27,PI]],{adv:1}),
+  Bc: lay(MB,[[-6.5,-6,0],[-6.5,.5,0],[-12,-3,0],[-12,3.5,0]],[0,8,0],RCORN),
+  Bo: lay(MB,[[-17,-7,-.35],[-23,-3,-.35],[-29,1,-.35],[-34,5,-.35]],[0,3,0],RCORN),
+  BX: lay(MB,WB,[0,3,0],RCENT),
+  C:  lay(MB,WC,[0,-2,0],RCENT),
+  CYhit:lay(MB,[[-12,-10,-.35],[-17,-6,-.35],[-23,-4,-.35],[-29,0,-.35]],[0,-2,0],[[-15.5,-17.5,2.5],[15.5,-17.5,-2.5]]),
+  Crush:lay(MB,[[-12,-16,-.35],[-18,-5,-.35],[-27,-10,-.35],[-27,8,-.35]],[0,-2,0],RCENT),
+  Cg: lay(MB,WC,[0,-2,0],RCENT,null,{丙:[-15,1,-.35]}),
+  Ccut:lay(MB,[[-11,-15.5,-.7],[-15,1,-.35],[-21,-11,-.5],[-27,-7,-.5]],[0,-2,0],[[-17,-6,-PI/2],[3.2,-35,PI]]),
+  Cback:lay(MB,WB,[0,3,0],RCORN),
+  P:  lay([[0,-21.5,0],[0,-15,0]],WC,[0,-2,0],RCENT,{dent:1}),
+  K3: lay(MB,WC,[3.5,-14.5,0],RCENT),
+  D:  lay(MB,WD,[0,-2,0],RBEH,{turn:1}),
+  D4: lay(MB,[[-11,-15.5,-.7],[-12.6,-23,-PI/2],[-6.8,-36,PI],[-19,-20,-PI/2]],[0,-2,0],RBEH,{turn:1}),
+};
+LAY.R=mod('D',{foe:{turn:0,rout:1}});
+LAY.R4=mod('D4',{foe:{turn:0,rout:.6}});
+LAY.CYmove=mod('C',{RL:RCORN[0],RR:RCORN[1]});
+LAY.CcutMove=mod('Ccut',{RL:RCENT[0]});
+LAY.CbackMove=mod('Cback',{RL:RCENT[0],RR:RCENT[1]});
+function chase(base){return mod(base,{騎:[0,-40,0]});}
+function chaseAll(base){const o=cl(LAY[base]);QU.forEach((u,i)=>{const c=o[u];o[u]=[c[0]*1.15+rand(-3,3),c[1]-13+rand(-4,4),c[2]+rand(-.6,.6)];});o['騎']=[o['騎'][0],o['騎'][1]-10,0];return o;}
+const UNITS=[...QU,'騎','RL','RR'];
+const LOSSK=[...QU,'騎'];
+const cur={};let curFoe={...FOE0},curLoss={};
+function setLayoutNow(L){UNITS.forEach(u=>cur[u]=[...L[u]]);curFoe={...FOE0,...L.foe};curLoss={...(L.loss||{})};tw=null;}
+let tw=null;
+function goLayout(L,dur,done){if(typeof L==='string')L=LAY[L];const from={};UNITS.forEach(u=>from[u]=[...cur[u]]);
+  tw={from,to:L,ff:{...curFoe},tf:{...FOE0,...L.foe},fl:{...curLoss},tl:{...(L.loss||{})},t0:performance.now(),dur:reduceMotion?1:(dur==null?2600:dur),done};}
+function goSeq(list,dur,done){const [h,...rest]=list;goLayout(h,dur,rest.length?()=>goSeq(rest,dur,done):done);}
+
+/* ================= 鏡頭 ================= */
+const VIEWS={
+  tower:{p:[0,56,40],l:[0,0,-2]},
+  foe:{p:[0,17,-48],l:[0,0,6]},
+  mid:{p:[0,46,24],l:[0,0,-8]},
+  wide:{p:[0,62,30],l:[0,0,-12]},
+  near:{p:[0,50,22],l:[0,0,-15]},
+  chase:{p:[0,66,14],l:[0,0,-28]}
+};
+let camFrom=null,camTo=null,camT0=0;const camP=new THREE.Vector3(0,56,40),camL=new THREE.Vector3(0,0,-2);
+let portrait=false,curView='tower';
+function goView(k,instant){curView=k;const v=VIEWS[k];const sq=camera.aspect<1.15?1.12:1;const pos=[v.p[0],v.p[1]*sq,v.l[2]+(v.p[2]-v.l[2])*sq],lk=v.l;
+  camFrom={p:camP.clone(),l:camL.clone()};camTo={p:new THREE.Vector3(...pos),l:new THREE.Vector3(...lk)};camT0=performance.now();
+  if(instant||reduceMotion){camP.copy(camTo.p);camL.copy(camTo.l);camFrom=null;}}
+function resize(){const st=$('stage');const w=Math.max(1,st.clientWidth),h=Math.max(1,st.clientHeight);renderer.setSize(w,h,false);camera.aspect=w/h;camera.fov=w/h<1.15?58:50;camera.updateProjectionMatrix();const p=w/h<1.15;if(p!==portrait){portrait=p;goView(curView,true);}}
+addEventListener('resize',resize);
+
+/* ================= 每一個人的位置 ================= */
+function manXZ(m,L,foe){
+  if(m.team===0){const c=L[m.u],cs=Math.cos(c[2]),sn=Math.sin(c[2]);return[c[0]+m.lx*cs+m.lz*sn,c[1]-m.lx*sn+m.lz*cs,c[2]];}
+  let x,z,ry;
+  if(m.res){const c=L[m.res],cs=Math.cos(c[2]),sn=Math.sin(c[2]);x=c[0]+m.lx*cs+m.lz*sn;z=c[1]-m.lx*sn+m.lz*cs;ry=c[2];}
+  else{x=m.bx;z=m.bz+foe.adv*8;ry=PI;
+    if(foe.dent>0&&Math.abs(x)<3.7)z-=foe.dent*(3-Math.abs(x)*.5);
+    if(foe.dent>0&&Math.abs(x)>=3.7&&m.r<3){const sg=Math.sign(x);x-=sg*foe.dent*.6;ry=PI-sg*foe.dent*.9;}
+    if(foe.pinch>0&&Math.abs(m.bx)>=3.7&&m.r<4){const sg=Math.sign(m.bx);x-=sg*foe.pinch*1.0;z+=foe.pinch*1.2;ry=PI-sg*foe.pinch*1.2;}
+    if(foe.turn>0&&(m.c===0||m.c===EC-1))ry=PI+(m.c===0?-1:1)*foe.turn*PI/2;}
+  if(foe.rout>0){z-=foe.rout*(16+m.s1*18);x+=foe.rout*(x*.5+(m.s2-.5)*12);if(foe.rout>.15)ry=(m.s2-.5)*.8;
+    if(foe.regroup>0){z+=foe.regroup*(9+m.s1*5);if(foe.regroup>.3)ry=PI+(m.s2-.5)*.6;}}
+  return[x,z,ry];
+}
+
+/* ================= 每格更新 ================= */
+function frame(now){
+  requestAnimationFrame(frame);
+  let moving=0,foeMoving=0;
+  if(tw){const u=clamp((now-tw.t0)/tw.dur,0,1),e=ease(u);
+    UNITS.forEach(k=>{const a=tw.from[k],b=tw.to[k];cur[k][0]=lerp(a[0],b[0],e);cur[k][1]=lerp(a[1],b[1],e);cur[k][2]=a[2]+angDiff(a[2],b[2])*e;});
+    const ff=tw.ff,tf=tw.tf;const nf={};for(const k in FOE0)nf[k]=lerp(ff[k]||0,tf[k]||0,e);curFoe=nf;
+    const nl={};LOSSK.forEach(k=>nl[k]=lerp(tw.fl[k]||0,tw.tl[k]||0,e));curLoss=nl;
+    moving=u<1?1:0;foeMoving=moving&&['adv','rout','dent','pinch','regroup'].some(k=>(ff[k]||0)!==(tf[k]||0))?1:0;
+    if(u>=1){const d=tw.done;tw=null;if(d)d();}}
+  if(camFrom){const u=clamp((now-camT0)/1800,0,1),e=ease(u);camP.lerpVectors(camFrom.p,camTo.p,e);camL.lerpVectors(camFrom.l,camTo.l,e);if(u>=1)camFrom=null;}
+  camera.position.copy(camP);camera.lookAt(camL);
+  const t=now/1000;
+  for(let i=0;i<N;i++){const m=men[i];const [x,z,ry]=manXZ(m,cur,curFoe);
+    let mv=m.team===0?moving:(foeMoving||(m.res&&moving));
+    if(m.team===0&&moving&&tw){const a=tw.from[m.u],b=tw.to[m.u];if(Math.abs(a[0]-b[0])+Math.abs(a[1]-b[1])+Math.abs(angDiff(a[2],b[2]))<.05)mv=0;}
+    if(m.res&&moving&&tw){const a=tw.from[m.res],b=tw.to[m.res];if(Math.abs(a[0]-b[0])+Math.abs(a[1]-b[1])<.05&&!foeMoving)mv=0;}
+    const fall=m.team===0?clamp((curLoss[m.u]||0)*16-m.fk,0,1):0;if(fall>0)mv=0;
+    const bob=mv?Math.abs(Math.sin(t*9+i))*.12:0;
+    for(let k=0;k<PARTS.length;k++){const pt=PARTS[k];
+      const lr=mv&&(pt.k==='legL'||pt.k==='legR')?Math.sin(t*9+i+(pt.k==='legL'?0:PI))*.5:0;
+      e4.set(fall*1.45,ry,0,'YXZ');q4.setFromEuler(e4);p4.set(x,bob+fall*.14,z);s4.set(1,1,1);PM.compose(p4,q4,s4);
+      e4.set(lr,0,0,'XYZ');q4.setFromEuler(e4);p4.set(pt.x||0,pt.y,0);s4.set(pt.w,pt.h,pt.d);CM.compose(p4,q4,s4);
+      m4.multiplyMatrices(PM,CM);IMS[k].setMatrixAt(i,m4);}
+  }
+  IMS.forEach(im=>im.instanceMatrix.needsUpdate=true);
+  QU.forEach(u=>{const c=cur[u],cs=Math.cos(c[2]),sn=Math.sin(c[2]);const lx=2.9,lz=-1.6;placeFlag(FLAGS[u],c[0]+lx*cs+lz*sn,c[1]-lx*sn+lz*cs);});
+  const rt=curFoe.rout;
+  EFLAGS.forEach((f,i)=>{placeFlag(f,f.x+rt*(f.x*.8),EZ+5.6+curFoe.adv*8-rt*(20+i*6),-rt*3.2);f.sp.material.opacity=1-rt*.9;});
+  ['RL','RR'].forEach(u=>{const c=cur[u];placeFlag(RFLAGS[u],c[0]+(u==='RL'?-2.4:2.4),c[1]-rt*24,-rt*3);RFLAGS[u].sp.material.opacity=1-rt*.9;});
+  const cv=cur['騎'];CAV.forEach((h,i)=>{h.g.position.set(cv[0]+h.lx,(tw&&moving?Math.abs(Math.sin(t*7+i))*.15:0),cv[1]+h.lz);h.g.rotation.y=cv[2];const f=clamp((curLoss['騎']||0)*6-i,0,1);h.g.rotation.z=f*1.5;if(f>0)h.g.position.y=f*.35;});
+  if(ARW.length)arMat.opacity=.5+.35*Math.sin(t*5);
+  const dz=Math.max(cur['己'][1]+9,cv[1]+5,8);DRUM.position.set(-4.5,0,dz);placeFlag(BIGF,-4.5,dz+.4);
+  renderer.render(scene,camera);
+  drawMM($('mm'),cur,curFoe,true);
+}
+
+/* ================= 陣形輪廓（俯視） ================= */
+function drawMM(cv,L,foe,live){const g=cv.getContext('2d'),W=cv.width,H=cv.height,S=W/150;
+  g.setTransform(1,0,0,1,0,0);g.clearRect(0,0,W,H);g.fillStyle='#2a2216';g.fillRect(0,0,W,H);
+  const sc=1.42*S,ox=W/2,oz=40*sc+4*S;const X=x=>ox+x*sc,Z=z=>oz+z*sc;
+  for(const m of men){if(m.team!==1)continue;const [x,z]=manXZ(m,L,foe);g.fillStyle=m.res?'rgba(255,140,110,.95)':'rgba(207,58,43,.9)';g.fillRect(X(x)-.9*S,Z(z)-.9*S,1.8*S,1.8*S);}
+  QU.forEach(u=>{const c=L[u];g.save();g.translate(X(c[0]),Z(c[1]));g.rotate(-c[2]);g.fillStyle=FLAG[SIDE[u]];g.fillRect(-2.6*sc,-2.4*sc,5.2*sc,4.8*sc);
+    g.fillStyle='rgba(0,0,0,.55)';g.fillRect(-2.6*sc,-2.4*sc,5.2*sc,1.1*S);g.restore();});
+  const k=L['騎'];g.fillStyle='#b98a5a';g.fillRect(X(k[0])-3*sc,Z(k[1])-2*sc,6*sc,4*sc);
+  if(live&&ARW.length){const ph=performance.now();g.save();g.lineCap='round';g.lineJoin='round';
+    ARW.forEach(pts=>{const P=pts.map(([x,z])=>[X(x),Z(z)]);const [ax,az]=P[P.length-2],[bx,bz]=P[P.length-1];const an=Math.atan2(bz-az,bx-ax);
+      g.strokeStyle='rgba(20,6,2,.75)';g.lineWidth=4.6*S;g.setLineDash([]);g.beginPath();P.forEach(([x,z],j)=>j?g.lineTo(x,z):g.moveTo(x,z));g.stroke();
+      g.strokeStyle=`rgba(255,96,64,${.75+.25*Math.sin(ph/180)})`;g.lineWidth=2.4*S;g.setLineDash([5*S,3*S]);g.lineDashOffset=-ph/40;g.beginPath();P.forEach(([x,z],j)=>j?g.lineTo(x,z):g.moveTo(x,z));g.stroke();
+      g.setLineDash([]);g.fillStyle='#ff6040';g.beginPath();g.moveTo(bx,bz);g.lineTo(bx-7*S*Math.cos(an-.5),bz-7*S*Math.sin(an-.5));g.lineTo(bx-7*S*Math.cos(an+.5),bz-7*S*Math.sin(an+.5));g.closePath();g.fill();});
+    g.restore();}
+}
+
+/* ================= 敵軍意圖：地上的紅箭頭與小地圖箭頭 ================= */
+let ARW=[];
+const ARG=new THREE.Group();scene.add(ARG);
+const arMat=new THREE.MeshBasicMaterial({color:0xff4a2a,transparent:true,opacity:.8,depthWrite:false,side:THREE.DoubleSide,fog:false});
+const headGeo=(()=>{const sh=new THREE.Shape();sh.moveTo(-1.4,0);sh.lineTo(1.4,0);sh.lineTo(0,2.2);sh.closePath();const g=new THREE.ShapeGeometry(sh);g.rotateX(Math.PI/2);return g;})();
+function build3DArrows(){while(ARG.children.length)ARG.remove(ARG.children[0]);
+  ARW.forEach(pts=>{for(let i=0;i<pts.length-1;i++){const [x0,z0]=pts[i],[x1,z1]=pts[i+1];const dx=x1-x0,dz=z1-z0,L=Math.hypot(dx,dz)||1;const last=i===pts.length-2;const sl=Math.max(.2,last?L-2.1:L);
+    const m=new THREE.Mesh(BOX,arMat);m.scale.set(.75,.05,sl);m.rotation.y=Math.atan2(dx,dz);m.position.set(x0+dx/L*sl/2,.16,z0+dz/L*sl/2);ARG.add(m);
+    if(last){const h=new THREE.Mesh(headGeo,arMat);h.rotation.y=Math.atan2(dx,dz);h.position.set(x1-dx/L*2.2,.17,z1-dz/L*2.2);ARG.add(h);}}});}
+function resolveArrows(list){return list.map(a=>{const f=a.f==='SQ'?[0,EZ+4+curFoe.adv*8]:(typeof a.f==='string'?[cur[a.f][0],cur[a.f][1]]:a.f);return a.via?[f,a.via,a.to]:[f,a.to];});}
+function showIntent(cx){ARW=resolveArrows(cx.arrows);build3DArrows();const ml=$('mmL');ml.textContent='紅箭頭＝敵軍意圖';ml.className='fo';
+  if(dk.querySelector('.kick')&&dk.querySelector('.kick').textContent==='號令已下')dk.insertAdjacentHTML('beforeend',`<div class="fsay"><b>敵將的判斷</b>「${esc(cx.say)}」</div><p class="hint">看戰場上與「陣形輪廓」裡的紅箭頭：敵軍要這樣反制。</p>`);}
+function clearIntent(){ARW=[];build3DArrows();const ml=$('mmL');ml.textContent='陣形輪廓';ml.className='';}
+
+/* ================= 聲音：程式合成的琵琶、簫、鼓、鑼 ================= */
+let AC=null,master=null,musBus=null,sfxBus=null,soundOn=true,seqT=0,seqI=0,seqTimer=null;
+const NOTE={D3:146.83,A2:110,G3:196,E3:164.81,A3:220,D4:293.66,E4:329.63,G4:392,A4:440,C5:523.25,D5:587.33,E5:659.25};
+const SCALE=[NOTE.D4,NOTE.E4,NOTE.G4,NOTE.A4,NOTE.C5,NOTE.D5,NOTE.E5];
+const MEL=[4,-1,3,-1,2,3,4,-1, 5,-1,4,3,2,-1,-1,-1, 1,-1,2,-1,3,2,1,-1, 0,-1,1,2,3,-1,-1,-1, 3,-1,4,-1,5,4,3,-1, 2,-1,3,2,1,-1,-1,-1, 2,-1,1,-1,0,1,2,-1, 1,-1,0,-1,0,-1,-1,-1];
+const XIAO=[NOTE.A3,NOTE.G3,NOTE.E3,NOTE.D3,NOTE.A3,NOTE.G3,NOTE.E3,NOTE.D3];
+const BEAT=60/72/2;
+function audioInit(){if(AC)return;try{AC=new (window.AudioContext||window.webkitAudioContext)();}catch(e){return;}
+  master=AC.createGain();master.gain.value=soundOn?.55:0;master.connect(AC.destination);
+  musBus=AC.createGain();musBus.gain.value=.32;musBus.connect(master);sfxBus=AC.createGain();sfxBus.gain.value=.8;sfxBus.connect(master);
+  seqT=AC.currentTime+.2;seqTimer=setInterval(sched,90);}
+function pluck(t,f,v,dur){const o=AC.createOscillator(),o2=AC.createOscillator(),g=AC.createGain(),g2=AC.createGain(),lp=AC.createBiquadFilter();
+  o.type='triangle';o2.type='sawtooth';o.frequency.value=f;o2.frequency.value=f*1.004;lp.type='lowpass';lp.frequency.setValueAtTime(f*7,t);lp.frequency.exponentialRampToValueAtTime(f*1.4,t+dur);
+  g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(v,t+.004);g.gain.exponentialRampToValueAtTime(.0006,t+dur);g2.gain.value=.22;
+  o.connect(g);o2.connect(g2);g2.connect(g);g.connect(lp);lp.connect(musBus);o.start(t);o2.start(t);o.stop(t+dur+.05);o2.stop(t+dur+.05);}
+function xiao(t,f,dur,v){const o=AC.createOscillator(),lfo=AC.createOscillator(),lg=AC.createGain(),g=AC.createGain();o.type='sine';o.frequency.value=f;lfo.frequency.value=5;lg.gain.value=f*.006;lfo.connect(lg);lg.connect(o.frequency);
+  g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(v,t+.5);g.gain.setValueAtTime(v,t+dur-.6);g.gain.linearRampToValueAtTime(0,t+dur);o.connect(g);g.connect(musBus);o.start(t);lfo.start(t);o.stop(t+dur+.05);lfo.stop(t+dur+.05);}
+function drum(t,v,bus){const o=AC.createOscillator(),g=AC.createGain();o.type='sine';o.frequency.setValueAtTime(120,t);o.frequency.exponentialRampToValueAtTime(46,t+.28);
+  g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.001,t+.5);o.connect(g);g.connect(bus||sfxBus);o.start(t);o.stop(t+.55);
+  const n=AC.createBufferSource(),b=AC.createBuffer(1,AC.sampleRate*.08,AC.sampleRate),d=b.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1)*(1-i/d.length);
+  const ng=AC.createGain(),bp=AC.createBiquadFilter();bp.type='bandpass';bp.frequency.value=900;ng.gain.value=v*.35;n.buffer=b;n.connect(bp);bp.connect(ng);ng.connect(bus||sfxBus);n.start(t);}
+function gong(t){[1,1.48,2.09,2.74,3.6].forEach((r,i)=>{const o=AC.createOscillator(),g=AC.createGain();o.type='sine';o.frequency.value=196*r;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.22/(i+1),t+.01);g.gain.exponentialRampToValueAtTime(.0005,t+2.6-i*.3);o.connect(g);g.connect(sfxBus);o.start(t);o.stop(t+2.8);});}
+function sched(){if(!AC)return;while(seqT<AC.currentTime+.35){const i=seqI%MEL.length;const n=MEL[i];if(n>=0)pluck(seqT,SCALE[n],.16,BEAT*2.6);
+  if(i%8===0){xiao(seqT,XIAO[(i/8)%XIAO.length],BEAT*8,.07);drum(seqT,.22,musBus);}if(i%8===4)drum(seqT,.12,musBus);seqI++;seqT+=BEAT;}}
+function sfxDrum(n){if(!AC||!soundOn)return;const t=AC.currentTime+.02;for(let i=0;i<n;i++)drum(t+i*.24,.55);}
+function sfxGong(){if(!AC||!soundOn)return;gong(AC.currentTime+.02);}
+$('bMute').onclick=()=>{soundOn=!soundOn;$('bMute').textContent=soundOn?'聲':'靜';if(master)master.gain.value=soundOn?.55:0;};
+
+/* ================= 兵書 ================= */
+const BOOK=[
+  {id:'s1',b:'鴈行之陳者，所以接射也。',w:'白話：雁行之陣斜排展開，讓弓弩都射得到。（字義依銀雀山漢簡整理本，學界仍有異說）',src:'《孫臏兵法・十陣》'},
+  {id:'s2',b:'前行若有雍，後列若貍。',w:'白話：前排像猛獸般正面衝撞，後列像狸貓伏低、等時機再撲。（「雍」字竹簡難讀，有讀作牛、狒狒等說法，字義未定）',src:'《孫臏兵法・十陣》'},
+  {id:'s3',b:'錐行者，所以衝堅毀銳也；鴈行者，所以觸側應［變］也。',w:'白話：錐行陣是用來衝破堅陣、摧毀精兵的；鴈行陣是用來衝擊敵人側翼、應付變化的。（竹簡缺字，「變」為補字。曾瑞龍據此說：錐行由內向外撕裂，鴈行由外向內收攏）',src:'《孫臏兵法・威王問》'},
+  {id:'s4',b:'鴈行前銳後張，延斜而行，便于左右，利於周旋。',w:'白話：鴈行陣前端尖、後方張開，斜斜地延伸前進，方便向左右包抄，適合迂迴周旋。',src:'《武經總要》卷七'},
+  {id:'s5',b:'鴈行延斜，惡其斷絕，故可以勝鴈行。',w:'白話：鴈行陣斜向拉得太長，最怕中間斷開，所以罘罝陣能勝過鴈行陣。（曾瑞龍提醒：八陣互相剋制的說法，可能只是五行相剋觀念的投射，不一定有戰術上的道理）',src:'《武經總要》卷七，論罘罝陣'},
+  {id:'s6',b:'鴈行陣者，乃太公三才之天陣……則孫子之鴈行陣，吳起之鵝鸛陣，諸葛亮之衡陣，以其連接如秤衡也。',w:'白話：鴈行陣就是太公的天陣、孫子的鴈行陣、吳起的鵝鸛陣、諸葛亮的衡陣；叫「衡陣」，是因為各部連接起來像一根秤桿。',src:'《武經總要》卷八'},
+  {id:'s7',b:'右以方陣為鴈行陣。法曰：舉鵰旗，聞八鼓音，中部前曲進，前出為首，其後曲次之，與前部前曲、後部前曲並前。前部後曲左斜，官曲相隨；後部後曲右斜，官曲相隨。右部卻次後部，曲皆右斜，亦官曲相隨；左部卻次前部，曲皆左斜，亦官曲相隨。校尉司馬部後居地如法。城丘利鴈行，鴈行利繞也。',w:'白話：從方陣變成鴈行陣的方法：舉起鵰旗，聽到八通鼓，中部的前曲向前出，當全陣的前鋒，中部的後曲跟在後面，與前部前曲、後部前曲一起前進。前部後曲向左斜出，各單位一個接一個跟隨；後部後曲向右斜出，也一個接一個跟隨。右部退在後部之後，各曲都向右斜；左部退在前部之後，各曲都向左斜，也都一個接一個跟隨。校尉、司馬等指揮官照規定位在各部後方。靠近城池、丘陵的地方適合鴈行陣，因為鴈行陣善於繞到敵人側面。（遊戲中的十個曲：丁丙＝前部、乙甲＝左部、戊己＝中部、壬癸＝後部、庚辛＝右部）',src:'《武經總要》卷八，裴子法（一般認為出自唐代裴緒，沒有直接證據）'},
+  {id:'s8',b:'（原文待補）',w:'白話：敵軍潰敗之前，騎兵不准上馬，要下馬步戰；等到下令追擊，才上馬。',src:'李靖兵法，據曾瑞龍文引鄧澤宗《李靖兵法輯本註譯》，頁 105'},
+  {id:'s9',b:'三……闕羅以自存。',w:'白話（兩種讀法）：一說是「從三面進攻，別讓敵人逃出你的網而保全自己」（鄧澤宗、蘇對［Sawyer］）；一說是「突破敵人的網，以保全自己」（劉殿爵、安樂哲）。竹簡殘缺，讀法未定。曾瑞龍認為前一種比較合乎戰術部署，但也承認「自存」二字像是防禦，難以確定。',src:'《孫臏兵法・十陣》，緊接「前行若有雍，後列若貍」之後'},
+  {id:'s10',b:'歸師勿遏，圍師必闕，窮寇勿迫。',w:'白話：撤退回國的敵軍，不要攔截；包圍敵人要留一個缺口；陷入絕境的敵人，不要逼得太緊。',src:'《孫子・軍爭》'},
+  {id:'s11',b:'逐奔不逾列，是以不亂。',w:'白話：追擊潰逃的敵人時不脫離自己的行列，所以隊形不亂。',src:'《司馬法・天子之義》'},
+  {id:'s12',b:'（曾瑞龍的結論）',w:'白話：鴈行陣在接敵之初是楔形，不是Ｖ字形。先出的是中部，兩翼梯次跟在後面；之後兩翼斜向延伸，掩護兩側，可能最終包抄敵人。牛角形要到決勝時刻才出現；太早出現，意圖就會暴露，敵人會跟著調整陣線。',src:'曾瑞龍〈鴈行陣是什麼樣子？〉（2008）結論'},
+  {id:'s13',b:'（曾瑞龍論鴈群）',w:'白話：雁群飛行時，是一隻領頭、兩翼斜向後方，不是兩端在前。如果陣名取自雁群的形狀，那就是前鋒強大、兩側有掩護的陣形。',src:'曾瑞龍〈鴈行陣是什麼樣子？〉（2008）'}
+];
+const BK={};BOOK.forEach((b,i)=>BK[b.id]={...b,n:i+1});
+$('bookList').innerHTML=BOOK.map(b=>`<li id="bk-${b.id}"><b>${esc(b.b)}</b><span>${esc(b.w)}</span><span style="color:var(--bronze);font-size:12.5px">${esc(b.src)}</span></li>`).join('');
+function openBook(id){$('book').hidden=false;document.querySelectorAll('#bookList li').forEach(li=>li.classList.toggle('hl',id&&li.id==='bk-'+id));
+  if(id){const el=$('bk-'+id);if(el)el.scrollIntoView({block:'center'});}else $('book').scrollTop=0;}
+$('bBook').onclick=()=>openBook();$('bBookX').onclick=$('bBookX2').onclick=()=>{$('book').hidden=true;};
+$('bEndBook').onclick=()=>openBook();
+
+/* ================= 八個抉擇 ================= */
+const OPT1={mid:{b:'中部先出',s:'戊前曲領頭，中部向敵陣推進，兩翼留在後方。'},wing:{b:'兩翼先伸',s:'左右兩翼搶先向前，伸成兩支角，準備包抄。'},cav:{b:'騎兵先衝',s:'後騎上馬，搶先衝向敵陣。'}};
+const STG=['初始階段','轉換','決勝階段'];
+let VAR='X',ENC='gap';
+const Q=[
+  {no:'一',k:'抉擇一・第一鼓',stage:0,logic:'藏住意圖，由中部吸住敵人',view:'tower',base:'A',
+   h:'鼓聲一響，誰先動？',p:()=>'兩軍對峙。敵軍是「厚而正」的方陣，兩側後方各有一支預備隊（「預」字旗）。你的十個曲照《武經總要》排開：中部在前，兩翼一層層退在後面。',
+   cap:'<em>開局</em>你的陣中央突出、兩翼在後，像一個倒過來的Ｖ。',
+   o:{mid:{...OPT1.mid,ok:1,lay:'A2',t:'敵將的目光被中部吸住。兩翼仍在後方，一層層排開，掩護中部兩側。',r:['s2','s7']},
+      wing:{...OPT1.wing,lay:'W',t:'兩翼還離得很遠，意圖已經曝光。敵將收縮兩翼，轉打你單薄的中部。',r:['s12']},
+      cav:{...OPT1.cav,lay:'K',t:'敵陣還沒亂，騎兵撞上長矛，白白折損。',r:['s8']}}},
+  {no:'二',k:'抉擇二・中部接敵',stage:0,logic:'中部纏住敵人，不急著打穿',view:'mid',base:'B',
+   h:'中部撞上敵陣前排，接下來呢？',p:()=>'戊前曲已經頂到方陣前緣，己後曲跟在後面。兩翼還在後方。',
+   cap:'<em>接敵</em>中部頂到方陣前緣了。',
+   o:{hold:{b:'頂住纏住',s:'不求打穿，咬住敵陣前排，讓它脫不了身。',ok:1,lay:'B',t:'敵陣前排被纏住，敵將開始擔心中央。中部的工作是吸住敵人，不是打穿它。',r:['s2','s12']},
+      push:{b:'死戰猛推',s:'全力往方陣裡打，想一口氣衝破。',lay:'Bpush',t:'中部往方陣裡鑽，兩翼還在後方跟不上。方陣厚實，兩側前排轉身夾住你的中部。這樣打，其實是錐行陣的打法。',r:['s3']},
+      back:{b:'後退',s:'中部退回本陣，等兩翼上來。',lay:'Bback',t:'敵軍跟著壓上來，你的陣被推扁，兩翼還來不及展開。',r:['s2']}}},
+  {no:'三',k:'抉擇三・兩翼',stage:0,logic:'兩翼梯次在後，掩護中部兩側',view:'mid',base:'B',
+   h:'中部纏住敵陣的時候，兩翼該做什麼？',p:()=>'中部和敵陣前排纏鬥。兩翼的八個曲還在後方待命。',
+   cap:'<em>纏鬥</em>中部咬住敵陣前排。',
+   o:{keep:{b:'保持梯次在後',s:'一層一層退在中部兩側後方，不急著動。',ok:1,lay:'B',t:'敵人要繞打中部的側面，會先撞上兩翼。兩翼守住了中部兩側，也保留了日後向外展開的空間。',r:['s4','s13']},
+      clump:{b:'向中部靠攏支援',s:'兩翼往中間收，幫中部一起打。',lay:'Bc',t:'十個曲擠成一團，看起來更像錐行陣。兩翼沒有了向外包抄的空間。',r:['s3']},
+      spread:{b:'往外拉開',s:'兩翼現在就往外、往前斜出。',lay:'Bo',t:'兩翼和中部之間拉出一大段空隙，中部的側面露了出來；敵將也看出你要包抄了。',r:['s12']}}},
+  {no:'四',k:'抉擇四・張翼',stage:1,logic:'看敵方預備隊的動向，決定張開的時機',view:'wide',base:()=>VAR==='X'?'BX':'B',
+   h:'要張開兩翼了嗎？',
+   p:()=>VAR==='X'?'<span class="scout"><b>斥候回報</b>敵將見中部吃緊，已經把兩側的預備隊調往中央後方。敵陣兩側現在只剩方陣本身。</span>':'<span class="scout"><b>斥候回報</b>敵方兩支預備隊還守在方陣兩側後方，沒有動。</span>',
+   cap:'<em>轉折</em>注意紅旗「預」的位置。',
+   o:{now:{b:'現在依序斜出',s:'各曲一個接一個，向外、向前斜出。',ok:()=>VAR==='X',lay:()=>VAR==='X'?'C':'CYhit',
+          t:()=>VAR==='X'?'時機正好。敵方預備隊已被吸到中央，兩翼斜出時兩側沒有阻擋。':'敵方預備隊還在兩側後方。你的兩翼一斜出，正好撞上它們，前曲被截住。',r:['s4','s7']},
+      rush:{b:'全速衝出',s:'兩翼全速衝向敵陣兩側，越快越好。',lay:'Crush',t:'前曲跑得快、後曲跟不上，曲與曲之間脫了節，左右兩翼都斷成好幾段。',r:['s5','s6']},
+      wait:{b:'再等一下',s:'中部繼續纏鬥，兩翼按兵不動。',ok:()=>VAR==='Y',lay:()=>VAR==='Y'?['BX','C']:'B',
+          t:()=>VAR==='Y'?'中部繼續施壓，敵將終於把預備隊調往中央。兩側一空，兩翼依序斜出。':'時機過了。敵將看出中部只是纏鬥，又把預備隊調回兩側。',r:['s12','s4']}}},
+  {no:'五',k:'抉擇五・延斜之險',stage:1,logic:'斜得越長，越要曲曲相連',view:'wide',base:'Cg',
+   h:'左翼出現缺口，怎麼辦？',p:()=>'兩翼斜出的途中，左翼的丙後曲落在後面，丁、乙兩曲之間空了一段。敵將也看見了。',
+   cap:'<em>延斜</em>看左翼：丁和乙之間空了一段。',
+   o:{fill:{b:'後曲補上缺口',s:'丙後曲加速補位，各曲重新連成一線再前進。',ok:1,lay:'C',t:'曲與曲重新連上，像秤桿一樣連成一線。斜得再長，也不怕被切斷。',r:['s6','s7']},
+      ignore:{b:'不管缺口，加速包抄',s:'其他曲照樣前進，搶時間包抄。',lay:'Ccut',t:'敵方預備隊從缺口切進來，左翼斷成兩截。這正是《武經總要》說罘罝陣能剋鴈行陣的道理。',r:['s5']},
+      stop:{b:'停下收攏',s:'兩翼停止斜出，收回原位整隊。',lay:'Cback',t:'兩翼收回來了，包抄的機會也收掉了。敵將趁機把預備隊調回兩側。',r:['s4']}}},
+  {no:'六',k:'抉擇六・決勝',stage:2,logic:'兩翼收攏，三面夾擊',view:'near',base:'C',
+   h:'這一刻，誰先動？',p:()=>'中部纏住敵陣，兩翼斜出到位，已經到了方陣兩側。敵陣前排吃緊，開始動搖。',
+   cap:'<em>決勝</em>兩翼到位了。看「陣形輪廓」的形狀。',
+   o:{mid:{...OPT1.mid,lay:'P',t:'中部往方陣裡鑽，成了錐行陣。方陣厚實，中部被吞住，兩翼失去配合。',r:['s3']},
+      wing:{...OPT1.wing,ok:1,lay:'D',t:'兩翼由側面向內收，弓弩交叉射擊，三面夾擊，敵陣動搖。',r:['s1','s2','s4']},
+      cav:{...OPT1.cav,lay:'K3',t:'敵陣還沒潰散，騎兵仍嫌太早。',r:['s8']}}},
+  {no:'七',k:'抉擇七・合圍',stage:2,logic:'合圍與留缺口（竹簡讀法未定）',view:'wide',base:'D',
+   h:'三面已經合圍，後面要不要也堵上？',p:()=>'兩翼已經貼住方陣兩側，敵軍只剩後方一條退路。',
+   cap:'<em>合圍</em>敵軍只剩後方一條退路。',
+   o:{full:{b:'四面合圍',s:'左部、右部繞到方陣後方，把退路堵死。',ok:1,lay:'D4',t:'敵軍無路可退，困獸死戰。你最後還是會贏，但傷亡多了不少。',r:['s9','s10'],note:'這一題沒有標準答案：竹簡上的這一句殘缺，學者讀法不同。'},
+      gap:{b:'留一面缺口',s:'後方不堵，讓敵軍看得到退路。',ok:1,lay:'D',t:'敵軍看到退路，後排開始往後逃，方陣從後面瓦解。',r:['s9','s10'],note:'這一題沒有標準答案：竹簡上的這一句殘缺，學者讀法不同。'}}},
+  {no:'八',k:'抉擇八・敵潰',stage:2,logic:'敵潰之後，才輪到騎兵',view:'chase',base:()=>ENC==='full'?'R4':'R',
+   h:'敵陣崩潰了，接下來？',p:()=>ENC==='full'?'苦戰之後，方陣崩潰，殘兵衝破包圍四散。':'方陣崩潰，殘兵從後方缺口逃散。',
+   cap:'<em>敵潰</em>方陣崩潰了。',
+   o:{cav:{b:'騎兵上馬追擊',s:'後騎上馬，追擊逃散的敵軍。',ok:1,lay:()=>chase(ENC==='full'?'R4':'R'),t:'敵軍已經潰散，這才是騎兵上馬的時候。開局時衝上去白白折損的騎兵，現在派上了用場。',r:['s8']},
+      all:{b:'全軍追擊',s:'十個曲一起追上去。',lay:()=>chaseAll(ENC==='full'?'R4':'R'),t:'步卒追出了陣列，隊形散亂。萬一敵人另有伏兵，這時最危險。',r:['s11']},
+      stay:{b:'就地整隊',s:'全軍停下，重新列陣。',ok:1,lay:()=>ENC==='full'?'R4':'R',t:'陣形保住了，但大半敵軍逃走，日後還要再戰。',r:['s11','s8']}}}
+];
+const val=v=>typeof v==='function'?v():v;
+const PAIR={mid:['敵將的目光被中部吸住，兩翼梯次在後掩護。','中部鑽進方陣，變成錐行陣，被厚實的方陣吞住。'],wing:['兩翼還遠，意圖曝光，敵將轉打單薄的中部。','兩翼由側面向內收，弓弩交叉射擊，三面夾擊。'],cav:['敵陣未亂，騎兵撞上長矛，白白折損。','敵陣還沒潰散，仍嫌太早；等敵潰再上馬追擊。']};
+
+/* ================= 流程 ================= */
+const dk=$('dk'),foe=$('foe'),cap=$('cap');
+let qi=0,rec=[],busy=false;
+const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]];}return a;};
+function checkMore(){[dk,foe].forEach(d=>{d.classList.remove('more');if(d.hidden)return;d.classList.toggle('more',d.scrollHeight-d.scrollTop-d.clientHeight>12);});}
+[dk,foe].forEach(d=>{d.addEventListener('scroll',checkMore);new MutationObserver(()=>requestAnimationFrame(checkMore)).observe(d,{childList:true,subtree:true,attributes:true,attributeFilter:['hidden']});});addEventListener('resize',()=>setTimeout(checkMore,50));
+function setProg(){const el=$('prog');el.innerHTML=Q.map((q,i)=>`<span class="${i<qi?'ok':(i===qi?'now':'')}">${q.no}</span>`).join('');}
+function quoteHTML(ids){return ids.map(id=>{const b=BK[id];return`<div class="qt"><b>${esc(b.b)}</b><span>${esc(b.w)}</span><i>${esc(b.src)}</i></div>`;}).join('');}
+function showQ(i){qi=i;setProg();clearIntent();const q=Q[i];foe.hidden=true;dk.hidden=false;cap.hidden=false;cap.innerHTML=q.cap;busy=false;
+  const keys=shuffle(Object.keys(q.o));
+  dk.innerHTML=`<p class="kick">${q.k}</p><h2>${q.h}</h2><p>${q.p()}</p><div class="opts">${keys.map(k=>`<button type="button" class="opt" data-o="${k}"><b>${q.o[k].b}</b><span>${q.o[k].s}</span></button>`).join('')}</div>`;
+  dk.scrollTop=0;dk.querySelectorAll('.opt').forEach(b=>b.onclick=()=>choose(i,b.dataset.o));}
+/* 錯誤的命令 → 我軍照令行動 → 敵將判斷（紅箭頭）→ 敵軍反制 */
+const COUNTER={
+  '0:wing':()=>({move:'W',counter:mod('W',{foe:{adv:2.1},RL:[-5.6,1.5,-PI/2],RR:[5.6,1.5,PI/2],loss:{戊:.45,己:.25}}),say:'兩翼伸出來了，他要包我。先別管兩翼，全軍壓上，打他單薄的中部！',arrows:[{f:'SQ',to:[0,-5]},{f:'RL',via:[-9,-14],to:[-6.4,-.5]},{f:'RR',via:[9,-14],to:[6.4,-.5]}]}),
+  '0:cav':()=>({move:'K',counter:mod('K',{foe:{adv:.25},loss:{騎:.67}}),say:'騎兵直衝陣前？前排長矛放平，原地頂住就好。',arrows:[{f:[-3.5,-24],to:[-1.5,-17]},{f:[3.5,-24],to:[1.5,-17]}]}),
+  '1:push':()=>({move:'Bpush',counter:mod('Bpush',{foe:{pinch:1},loss:{戊:.5,己:.2}}),say:'他鑽進來了，兩翼還遠在後面。兩側合起來，夾住他！',arrows:[{f:[-10,-31],to:[-3.4,-23]},{f:[10,-31],to:[3.4,-23]}]}),
+  '1:back':()=>({move:mod('Bback',{foe:{adv:0},RL:RCORN[0],RR:RCORN[1]}),counter:mod('Bback',{foe:{adv:1.72},RL:[-12.5,-1,PI+.5],RR:[12.5,-1,PI-.5],loss:{戊:.3,丁:.3,壬:.3}}),say:'他退了！追上去壓住他，別讓他的兩翼展開。',arrows:[{f:'SQ',to:[0,-8.5]},{f:'RL',via:[-15,-18],to:[-12.5,-3]},{f:'RR',via:[15,-18],to:[12.5,-3]}]}),
+  '2:clump':()=>({move:'Bc',counter:mod('Bc',{RL:[-16.8,-4,-PI/2],RR:[16.8,-4,PI/2],loss:{乙:.4,庚:.4,甲:.2,辛:.2}}),say:'他擠成一團，兩側全空了。預備隊從外面繞過去，打他的側面！',arrows:[{f:'RL',via:[-19,-24],to:[-16.8,-6]},{f:'RR',via:[19,-24],to:[16.8,-6]}]}),
+  '2:spread':()=>({move:'Bo',counter:mod('Bo',{RL:[-6.8,-13.5,-PI/2],RR:[6.8,-13.5,PI/2],loss:{戊:.35,己:.4}}),say:'他的兩翼離中部太遠，中部兩側空了。預備隊插進去，打他的中部！',arrows:[{f:'RL',via:[-12,-22],to:[-7,-15.5]},{f:'RR',via:[12,-22],to:[7,-15.5]}]}),
+  '3:now':()=>({move:'CYmove',counter:mod('CYhit',{loss:{丁:.45,壬:.45,丙:.15,癸:.15}}),say:'他張翼了！預備隊就在兩側，迎頭截住他的前曲！',arrows:[{f:'RL',to:[-14.5,-16]},{f:'RR',to:[14.5,-16]}]}),
+  '3:rush':()=>({move:VAR==='X'?'Crush':mod('Crush',{RL:RCORN[0],RR:RCORN[1]}),counter:mod('Crush',{RL:[-22.5,-15,2.3],RR:[22.5,-15,-2.3],loss:{乙:.45,庚:.45,丁:.2,壬:.2}}),say:'他的兩翼跑散了，斷成好幾截。一段一段吃掉！',arrows:[{f:'RL',via:[-16,-27],to:[-22,-13.5]},{f:'RR',via:[16,-27],to:[22,-13.5]}]}),
+  '3:wait':()=>({move:'BX',counter:mod('B',{loss:{戊:.2}}),say:'他只是在纏鬥，看來不會包抄。預備隊調回兩側，守住側翼。',arrows:[{f:'RL',to:[-11,-33.5]},{f:'RR',to:[11,-33.5]}]}),
+  '4:ignore':()=>({move:'CcutMove',counter:mod('Ccut',{loss:{丙:.45,乙:.25}}),say:'缺口！從那裡切進去，把他的左翼斬成兩段！',arrows:[{f:'RL',via:[-11,-31],to:[-16.5,-8]}]}),
+  '4:stop':()=>({move:'CbackMove',counter:'Cback',say:'他把兩翼收回去了，兩側安全了。預備隊回防兩側。',arrows:[{f:'RL',to:[-11,-33.5]},{f:'RR',to:[11,-33.5]}]}),
+  '5:mid':()=>({move:'P',counter:mod('P',{foe:{pinch:1},loss:{戊:.5,己:.15}}),say:'他的中部鑽進來，兩翼反而停住了。兩側合起來，吞掉他的中部！',arrows:[{f:[-10,-31],to:[-3.4,-24]},{f:[10,-31],to:[3.4,-24]}]}),
+  '5:cav':()=>({move:'K3',counter:mod('K3',{loss:{騎:.67}}),say:'騎兵從中部旁邊擠上來？陣還沒亂，長矛頂住就是。',arrows:[{f:[7,-24],to:[4.4,-17]}]}),
+  '7:all':()=>{const b=ENC==='full'?'R4':'R';const mv=chaseAll(b);const c=mod(mv,{foe:{regroup:1},loss:{丁:.35,壬:.35,丙:.25,癸:.25,戊:.2}});return{move:mv,counter:c,say:'他的步卒追散了！回頭反咬，打他散亂的隊伍！',arrows:[{f:[0,-50],to:[0,-35]},{f:[-13,-48],to:[-16,-31]},{f:[13,-48],to:[16,-31]}]};}
+};
+function sfxFoe(){if(!AC||!soundOn)return;const t=AC.currentTime+.02;for(let i=0;i<4;i++)drum(t+i*.16,.4);}
+function choose(i,k){if(busy)return;busy=true;const q=Q[i],o=q.o[k];const ok=!!val(o.ok);
+  rec[i]=rec[i]||[];rec[i].push({k,b:o.b,ok});
+  if(i===6)ENC=k;
+  sfxDrum(ok?3:2);
+  dk.querySelectorAll('.opt').forEach(b=>b.disabled=true);
+  const cf=!ok&&COUNTER[i+':'+k];
+  if(cf){const cx=cf();
+    dk.innerHTML=`<p class="kick">號令已下</p><h2>${o.b}</h2><p class="hint">部隊照你的命令行動。注意敵軍怎麼回應。</p>`;
+    goLayout(cx.move,2300,()=>{showIntent(cx);setTimeout(()=>{sfxFoe();goLayout(cx.counter,2800,()=>showResult(i,k,ok,cx));},reduceMotion?50:1500);});
+    return;}
+  const L=val(o.lay);if(Array.isArray(L))goSeq(L,2200);else goLayout(L);
+  setTimeout(()=>showResult(i,k,ok,null),reduceMotion?50:900);}
+function showResult(i,k,ok,cx){const q=Q[i],o=q.o[k];
+    dk.innerHTML=`<p class="kick">後果</p><h2>${o.b}</h2>${cx?`<div class="fsay"><b>敵將的判斷</b>「${esc(cx.say)}」</div>`:''}<p>${val(o.t)}</p>${o.note?`<p class="hint">${o.note}</p>`:''}${quoteHTML(o.r)}`+
+      (ok?`<div class="row"><button type="button" class="chb main" id="bNext">${i===Q.length-1?'結算':'繼續'}</button></div>`
+         :`<p class="hint">看完後果，回到同一題重選。</p><div class="row"><button type="button" class="chb gong" id="bBack">鳴金・回到這一題</button></div>`);
+    dk.scrollTop=0;
+    if(ok)$('bNext').onclick=()=>next(i);else $('bBack').onclick=()=>{sfxGong();clearIntent();goLayout(val(q.base),1700);showQ(i);};}
+function next(i){
+  if(i===0){showFreeze();return;}
+  if(i===Q.length-1){showEnd();return;}
+  const n=i+1,q=Q[n];goView(q.view);
+  const b=val(q.base);
+  if(n===3&&VAR==='X')goLayout('BX',2400);else goLayout(b,2400);
+  showQ(n);}
+function showFreeze(){dk.hidden=true;goView('foe');cap.innerHTML='<em>敵將視角</em>這是方陣這一邊看過去的樣子。';qi=1;setProg();
+  foe.hidden=false;
+  foe.innerHTML=`<p class="kick">停格・你是敵將</p><h2>對面的陣中央突出、兩翼在後。<br>他要衝你的中軍，還是包你的兩翼？</h2><div class="vote"><span>衝中軍？</span><span>包兩翼？</span></div><p class="hint" style="text-align:center">請全班舉手猜一猜，再按揭曉。</p><div class="row"><button type="button" class="chb main" id="bRev">揭曉</button></div>`;
+  $('bRev').onclick=()=>{foe.innerHTML=`<p class="kick">揭曉</p><h2>只看開局的外形，分不出來。</h2><p>錐行陣要從中央撕開，鴈行陣要從兩翼包抄，兩者開局都是中央突出。敵將多半會把注意力和預備隊往中央調，這正是鴈行陣要的。曾瑞龍推測，正因為兩陣起初外形相近，孫臏才要特別說明它們用途不同。</p>${quoteHTML(['s3'])}<div class="row"><button type="button" class="chb main" id="bOn">回到將台</button></div>`;
+    $('bOn').onclick=()=>{foe.hidden=true;goView('mid');goLayout('B',2600);showQ(1);};};}
+function buildStrip(){const st=$('strip');st.innerHTML='';
+  const fr=[['A','開局：藏','像《武經總要》的圖',1],['B','接敵：纏','中部頂住，兩翼梯次在後',0],['C','轉換：張','兩翼斜出，曲曲相連',0],['D','決勝：收','像藍永蔚說的牛角',1]];
+  fr.forEach(([k,b,s,tag])=>{const d=document.createElement('div');d.className='fr'+(tag?' tag':'');const c=document.createElement('canvas');c.width=300;c.height=208;d.appendChild(c);
+    d.insertAdjacentHTML('beforeend',`<b>${b}</b><span>${s}</span>`);st.appendChild(d);drawMM(c,LAY[k],LAY[k].foe);});
+  st.insertAdjacentHTML('beforeend','<div class="arrow"><span>初始階段：藏住意圖，吸住敵人</span><span>決勝階段：兩翼收攏，三面夾擊</span></div>');}
+function showEnd(){dk.hidden=true;cap.hidden=true;qi=Q.length;setProg();buildStrip();
+  const retries=rec.reduce((s,r)=>s+(r?r.filter(x=>!x.ok).length:0),0);
+  $('stats').innerHTML=`<div><small>重選次數</small><b>${retries}</b></div><div><small>斥候回報</small><b>${VAR==='X'?'預備隊已調往中央':'預備隊仍在兩側'}</b></div><div><small>合圍</small><b>${ENC==='full'?'四面合圍':'留一面缺口'}</b></div>`;
+  $('tbl').innerHTML=Q.map((q,i)=>{const r=rec[i]||[];return`<tr><td class="n">${q.k.replace('・','<br>')}</td><td><span class="stg s${q.stage}">${STG[q.stage]}</span></td><td>${r.map(x=>`<span class="ch${x.ok?'':' re'}">${x.b}</span>`).join('')}</td><td>${q.logic}</td><td><button type="button" class="srcb" data-s="${Object.values(q.o)[0].r[0]}">看史料</button></td></tr>`;}).join('');
+  $('tbl').querySelectorAll('.srcb').forEach(b=>b.onclick=()=>openBook(b.dataset.s));
+  const pick=(i,k)=>(rec[i]||[]).filter(x=>x.k===k).map(x=>`<span class="ch${x.ok?'':' re'}">你選過</span>`).join('');
+  $('pair').innerHTML=['mid','wing','cav'].map(k=>`<tr><td class="n">${OPT1[k].b}</td><td>${PAIR[k][0]}<br>${pick(0,k)}</td><td>${PAIR[k][1]}<br>${pick(5,k)}</td></tr>`).join('');
+  $('end').hidden=false;$('end').scrollTop=0;goView('tower');}
+function start(){clearIntent();VAR=Math.random()<.5?'X':'Y';ENC='gap';rec=[];$('end').hidden=true;$('cover').hidden=true;setLayoutNow(LAY.A);goView('tower',true);showQ(0);}
+$('bGo').onclick=()=>{audioInit();start();};
+$('bAgain').onclick=()=>start();
+
+/* 開場：封面背後是兩軍對峙，鏡頭停在將台 */
+resize();setLayoutNow(LAY.A);goView('tower',true);setProg();
+if(document.fonts&&document.fonts.ready)document.fonts.ready.then(()=>{FLAGLIST.forEach(f=>{f.sp.material.map=flagTex(f.txt,f.bg,f.fg);});});
+window.__goose={setVar:v=>{VAR=v;},Q,LAY,choose:(i,k)=>choose(i,k),next:i=>next(i),start,state:()=>({qi,VAR,ENC,rec})};
+requestAnimationFrame(frame);
+})();
+</script>
+
+</body></html>
