@@ -73,6 +73,52 @@ function buildWorld(){
     ring(0,-28,14,0xff5a4a);ring(0,4,34,0x43c6ff);}
 }
 
+
+/* ---------- 主將（沿用《孫子論將》的主將造型：獸面鐵盔、鬼面、肩吞、披風、偃月刀、紅翎；藍軍著藍甲、紅軍著紅甲） ---------- */
+const discGeo=new THREE.CylinderGeometry(.15,.15,.04,18);discGeo.rotateX(PI/2);
+const GENC={blue:{armor:0x2f548f,dark:0x243f6c,skirt:0x2f5fae,cape:0x22407e,capeIn:0x16305c},red:{armor:0x9a2a1e,dark:0x7a2018,skirt:0xb8281c,cape:0xa82a1e,capeIn:0x8e1a10}};
+function makeGeneral(side,holo){const K=GENC[side];const mats={};
+  const M=c=>mats[c]||(mats[c]=holo?new THREE.MeshBasicMaterial({color:c}):new THREE.MeshLambertMaterial({color:c}));
+  const root=new THREE.Group(),body=new THREE.Group();root.add(body);body.scale.setScalar(1.7);
+  const B=(w,h,d,c,x,y,z,p,rx,ry,rz)=>{const m=new THREE.Mesh(BOX,M(c));m.scale.set(w,h,d);m.position.set(x,y,z);if(rx||ry||rz){m.rotation.order='YXZ';m.rotation.set(rx||0,ry||0,rz||0);}p.add(m);return m;};
+  for(const x of[.16,-.16]){const g=new THREE.Group();g.position.set(x,.68,0);body.add(g);B(.27,.4,.3,0x3a2a20,0,-.2,0,g);B(.26,.34,.3,0xd6a94e,0,-.5,0,g);B(.3,.05,.32,K.skirt,0,-.32,0,g);B(.29,.14,.38,0x1d1712,0,-.63,.03,g);B(.2,.1,.12,0x1d1712,0,-.58,.25,g);}
+  const up=new THREE.Group();up.position.y=.66;body.add(up);
+  B(.68,.14,.46,0x2a1a10,0,.1,0,up);B(.16,.12,.05,0xe8c870,0,.1,.24,up);
+  for(let i=0;i<9;i++){const a=i/9*TAU;const g=new THREE.Group();g.position.set(Math.sin(a)*.3,.03,Math.cos(a)*.22);g.rotation.order='YXZ';g.rotation.set(-.22,a,0);up.add(g);B(.2,.5,.05,i%2?K.dark:K.skirt,0,-.25,0,g);B(.22,.05,.06,0xd6a94e,0,-.5,0,g);}
+  B(.62,.64,.4,K.armor,0,.46,0,up);[.28,.42,.56].forEach(y=>B(.64,.04,.42,0xd6a94e,0,y,0,up));B(.66,.14,.44,0xd6a94e,0,.18,0,up);
+  const mirror=new THREE.Mesh(discGeo,M(0xf0d890));mirror.position.set(0,.5,.21);up.add(mirror);
+  B(.08,.08,.03,K.skirt,-.2,.64,.21,up);B(.08,.08,.03,K.skirt,.2,.64,.21,up);
+  for(const sd of[-1,1]){const g=new THREE.Group();g.position.set(sd*.42,.78,0);up.add(g);B(.34,.22,.44,K.armor,0,0,0,g);B(.36,.06,.46,0xd6a94e,0,-.12,0,g);
+    B(.2,.16,.1,0xe8c870,sd*.1,.04,.2,g);B(.05,.04,.02,0x15100c,sd*.06,.07,.26,g);B(.05,.04,.02,0x15100c,sd*.14,.07,.26,g);}
+  B(.42,.42,.42,0xe6b88c,0,1.04,0,up);
+  {const dome=new THREE.Mesh(new THREE.SphereGeometry(.3,12,7,0,TAU,0,PI/2),M(0x4a4a52));dome.position.y=1.2;dome.scale.y=1.12;up.add(dome);
+   const band=new THREE.Mesh(new THREE.CylinderGeometry(.315,.315,.07,14),M(0xd6a94e));band.position.y=1.21;up.add(band);
+   const nm=holo?new THREE.MeshBasicMaterial({color:K.dark,side:THREE.DoubleSide}):new THREE.MeshLambertMaterial({color:0x6a3a22,side:THREE.DoubleSide});
+   const neck=new THREE.Mesh(new THREE.CylinderGeometry(.3,.41,.38,14,1,true,PI-2.2,4.4),nm);neck.position.y=1.01;up.add(neck);}
+  B(.22,.19,.06,0xd6a94e,0,1.33,.27,up,-.25,0,0);B(.26,.05,.05,0xb8862e,0,1.42,.25,up,-.3,0,0);
+  for(const sd of[-1,1]){B(.035,.17,.16,0xd6a94e,sd*.29,1.31,.15,up,0,0,-sd*.45);B(.035,.13,.13,0xe8c870,sd*.34,1.4,.12,up,0,0,-sd*.8);B(.035,.09,.1,0xd6a94e,sd*.38,1.46,.09,up,0,0,-sd*1.1);}
+  B(.12,.04,.12,0xd6a94e,0,1.54,0,up);B(.05,.16,.05,0xd6a94e,0,1.64,0,up);B(.1,.06,.1,0xe8c870,0,1.74,0,up);
+  B(.44,.42,.05,0xc89a3a,0,1.03,.235,up);B(.16,.05,.03,0x3a1a0c,-.1,1.17,.265,up,0,0,-.35);B(.16,.05,.03,0x3a1a0c,.1,1.17,.265,up,0,0,.35);
+  for(const sd of[-1,1]){B(.12,.08,.02,0xb8281c,sd*.1,1.09,.262,up);B(.07,.05,.02,0x15100c,sd*.1,1.09,.27,up);B(.06,.08,.02,0xb8281c,sd*.17,.97,.262,up);B(.04,.07,.02,0xfff3d8,sd*.08,.88,.268,up);}
+  B(.08,.1,.05,0xa87a2a,0,1.0,.27,up);B(.24,.07,.02,0x2a0c08,0,.9,.262,up);
+  // 紅翎（靜態，向後彎）
+  [[-.14,.1],[-.07,.16],[0,.22],[.07,.16],[.14,.1]].forEach(([rz,rx],i)=>{let cur=new THREE.Group();cur.position.set(rz*.2,1.76,-.01);cur.rotation.set(rx-.1,0,rz);up.add(cur);
+    for(let k=0;k<8;k++){const seg=new THREE.Group();seg.position.y=k?.15:0;seg.rotation.x=-.16;const m=new THREE.Mesh(BOX,M([0xd23a2b,0xb8281c,0xe04a3a][i%3]));const w=.13*(1-k/8*.55);m.scale.set(w,.2,w*.8);m.position.y=.075;seg.add(m);cur.add(seg);cur=seg;}});
+  // 披風
+  const cape=new THREE.Group();cape.position.set(0,.82,-.25);cape.rotation.x=.12;up.add(cape);
+  B(.5,.3,.06,K.cape,0,-.15,0,cape);B(.58,.34,.06,K.cape,0,-.47,0,cape);B(.66,.32,.06,K.cape,0,-.79,0,cape);
+  for(const sd of[-1,1]){B(.05,.3,.07,0xd6a94e,sd*.25,-.15,0,cape);B(.05,.34,.07,0xd6a94e,sd*.29,-.47,0,cape);B(.05,.32,.07,0xd6a94e,sd*.33,-.79,0,cape);}
+  B(.7,.07,.07,0xd6a94e,0,-.95,0,cape);const emb=new THREE.Mesh(discGeo,M(0xd6a94e));emb.scale.set(1.3,1.3,1);emb.position.set(0,-.36,-.045);cape.add(emb);const emb2=new THREE.Mesh(discGeo,M(K.capeIn));emb2.scale.set(.75,.75,1);emb2.position.set(0,-.36,-.06);cape.add(emb2);
+  // 臂甲（右手握刀、左手按腰）
+  const arm=(x,rx)=>{const g=new THREE.Group();g.position.set(x,.74,0);g.rotation.x=rx;up.add(g);B(.2,.2,.62,K.dark,0,0,.31,g);B(.22,.22,.2,0xd6a94e,0,0,.52,g);B(.16,.16,.14,0xe6b88c,0,0,.68,g);return g;};
+  arm(.46,1.1);arm(-.46,.35);
+  // 偃月刀：豎持於右側
+  const grip=new THREE.Group();grip.position.set(-.5,.95,.55);grip.rotation.x=-PI/2+.08;up.add(grip);
+  B(.075,.075,3.3,0x5a2414,0,0,.6,grip);B(.1,.1,.18,0xd6a94e,0,0,-1.0,grip);B(.12,.12,.22,0xe8c870,0,0,2.2,grip);
+  const head=new THREE.Mesh(new THREE.ConeGeometry(.14,1.1,4),M(0xe2e8ea));head.rotation.x=PI/2;head.scale.x=.42;head.position.set(0,0,2.86);grip.add(head);B(.05,.22,.14,0xe2e8ea,0,0,2.36,grip);
+  for(const a of[-.5,0,.5]){const m=new THREE.Mesh(BOX,M(0xc8281c));m.scale.set(.08,.45,.07);m.position.set(a*.12,-.25,2.2);grip.add(m);}
+  return root;}
+
 /* ---------- 部隊 ---------- */
 // 一個 group＝一個曲（16 人）或紅軍方陣的一區（32 人）或一支預備隊（12 人）
 const PARTS=[{k:'leg',w:.5,h:.74,d:.26,y:.37},{k:'torso',w:.56,h:.62,d:.34,y:1.05},{k:'head',w:.36,h:.36,d:.36,y:1.56},{k:'helm',w:.42,h:.2,d:.42,y:1.8},{k:'spear',w:.06,h:2.4,d:.06,x:.36,y:1.4}];
@@ -88,7 +134,7 @@ function defineGroups(){ // 固定的部隊清單（位置由 show() 決定）
   '甲乙丙丁戊己庚辛壬癸'.split('').forEach(k=>add(k,'b',4,4,1.3));
   ['L','C','R'].forEach(k=>add('F'+k,'r',4,8,1.2));
   add('resA','res',3,4,1.2);add('resB','res',3,4,1.2);
-  add('將','gen',1,1,1);}
+  add('將','gen',0,1,1);G['將'].model='blue';add('紅將','rgen',0,1,1);G['紅將'].model='red';}
 function buildUnits(){
   if(units){scene.remove(units);units.traverse(o=>{if(o.material){if(o.material.map)o.material.map.dispose();o.material.dispose();}});}
   units=new THREE.Group();scene.add(units);meshes=[];flagSpr={};tagSpr={};const holo=!!T.holo;
@@ -98,6 +144,7 @@ function buildUnits(){
       const hx=k==='torso'?(side==='b'||side==='gen'?T.blue:side==='r'?T.red:T.res):k==='helm'?(side==='b'||side==='gen'?T.bHelm:T.rHelm):k==='head'?T.skin:k==='leg'?T.leg:(holo?(side==='b'?T.blue:T.red):0x4a3020);
       col.setHex(hx);col.offsetHSL(0,0,rand(-.04,.04));im.setColorAt(g.base+i,col);}
     units.add(im);meshes.push(im);}
+  for(const g of Object.values(G))if(g.model){g.mesh=makeGeneral(g.model,holo);units.add(g.mesh);}
   fxG=new THREE.Group();units.add(fxG);arrowG=new THREE.Group();units.add(arrowG);
   for(const g of Object.values(G)){if(g.flag)setFlag(g.id,g.flag,true);if(g.tag)setTag(g.id,g.tag,true);}
 }
@@ -128,7 +175,8 @@ function layoutUnits(now){
       for(let pi=0;pi<PARTS.length;pi++){const pt=PARTS[pi];q4.identity();p4.set(pt.x||0,lying?pt.y*.9-0.1:pt.y,0);s4.set(pt.w,pt.h,pt.d);CM.compose(p4,q4,s4);m4.multiplyMatrices(PM,CM);meshes[pi].setMatrixAt(g.base+i,m4);
         if(lying&&pt.k==='torso'&&!g._deadCol?.[i]){}}
     }
-    const fs=flagSpr[g.id];if(fs){const show=!g.hidden&&!g.dead;fs.pole.visible=fs.sp.visible=show;const hw=(g.cols-1)/2*g.sp+1.2;fs.pole.position.set(g.x+hw,fs.h/2,g.z-1);fs.sp.position.set(g.x+hw+.85,fs.h-.8,g.z-1);}
+    if(g.mesh){g.mesh.position.set(g.x,0,g.z);g.mesh.rotation.y=g.ry;g.mesh.visible=!g.hidden;}
+    const fs=flagSpr[g.id];if(fs){const show=!g.hidden&&!g.dead;fs.pole.visible=fs.sp.visible=show;const hw=g.n?(g.cols-1)/2*g.sp+1.2:2.2;fs.pole.position.set(g.x+hw,fs.h/2,g.z-1);fs.sp.position.set(g.x+hw+.85,fs.h-.8,g.z-1);}
     const ts=tagSpr[g.id];if(ts){ts.visible=!g.hidden;ts.position.set(g.x,6.6,g.z);}
   }
   meshes.forEach(m=>m.instanceMatrix.needsUpdate=true);
@@ -177,6 +225,7 @@ window.W={
   get theme(){return themeKey;},
   setFacing(th){HOME.th=th;cam.th=goal.th=th;},
   home(){goal={...HOME,r:homeR()};},
+  focus(x,z,r,th,ph){goal={th:th??goal.th,ph:ph??goal.ph,r:r||30,tx:x,tz:z};},
   resize,
   // desc.groups: {id:{x,z,ry,alive,dead,rout,hidden,flag:{t,c,h},tag:{t,c}}}
   show(desc,animate){const now=performance.now();

@@ -58,7 +58,8 @@ function sceneDesc(e,view){const s=e.s,ro=e.ro;if(s.over)view='truth';const g={}
   const lead=ro.C[0];if(lead&&s.B.shake>0&&s.B.M>0)g[lead].tag={t:'中部動搖',c:'rgba(200,110,20,.95)'};
   for(const k of['L','R']){const w=s.B.W[k];if(w.cut&&ro[k][0])g[ro[k][0]].tag={t:'陣線斷絕',c:'rgba(200,110,20,.95)'};}
   if(seenNow&&ro.D[0]&&(view==='red'||view==='truth'))g[ro.D[0]].tag={t:`紅軍試探：後陣 ${s.B.D} 曲`,c:'rgba(160,30,20,.92)'};
-  g['將']={x:-4.6,z:s.B.contact?-2:15,flag:{t:'將',c:'gen',h:6},alive:s.B.M>0?1:0};
+  g['將']={x:-4.6,z:s.B.contact?-2:15,ry:Math.PI,flag:{t:'將',c:'gen',h:6.5}};
+  g['紅將']={x:6.6,z:-32.5,ry:0,flag:{t:'將',c:'red',h:6.5}};
   for(const k of['L','C','R']){const F=s.R.F[k],br=s.R.broken[k];const d={x:{L:-4.8,C:0,R:4.8}[k],z:-25,ry:Math.PI,alive:Math.round(32*F/3),flag:{t:secName(k,view),c:'red',h:4.6}};
     if(br){d.rout=true;d.tag={t:'潰',c:'rgba(170,20,20,.95)'};}else if(s.R.shake[k]>0)d.tag={t:'動搖',c:'rgba(200,110,20,.95)'};g['F'+k]=d;}
   const resLoc=(view==='blue'||view==='proj')?s.resHist[Math.max(0,s.resHist.length-2)]:s.R.res;
