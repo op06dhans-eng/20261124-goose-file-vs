@@ -63,11 +63,11 @@ function sceneDesc(e,view){const s=e.s,ro=e.ro;if(s.over)view='truth';const g={}
   for(const k of['L','R']){const w=s.B.W[k];if(w.cut&&ro[k][0])g[ro[k][0]].tag={t:'陣線斷絕',c:'rgba(200,110,20,.95)'};}
   if(seenNow&&ro.D[0]&&(view==='red'||view==='truth'))g[ro.D[0]].tag={t:`紅軍試探：後陣 ${s.B.D} 曲`,c:'rgba(160,30,20,.92)'};
   g['將']={x:-4.6,z:s.B.contact?-2:15,ry:Math.PI,flag:{t:'將',c:'gen',h:6.5}};
-  g['紅將']={x:6.6,z:-32.5,ry:0,flag:{t:'將',c:'red',h:6.5}};
-  for(const k of['L','C','R']){const F=s.R.F[k],br=s.R.broken[k];const d={x:{L:-4.8,C:0,R:4.8}[k],z:-25,ry:Math.PI,alive:Math.round(32*F/3),flag:{t:secName(k,view),c:'red',h:4.6}};
+  g['紅將']={x:9.4,z:-33.8,ry:0,flag:{t:'將',c:'red',h:6.5}};
+  for(const k of['L','C','R']){const F=s.R.F[k],br=s.R.broken[k];const d={x:{L:-7.2,C:0,R:7.2}[k],z:-25,ry:Math.PI,alive:Math.max(0,Math.round(F*16)),flag:{t:secName(k,view),c:'red',h:4.6}};
     if(br){d.rout=true;d.tag={t:'潰',c:'rgba(170,20,20,.95)'};}else if(s.R.shake[k]>0)d.tag={t:'動搖',c:'rgba(200,110,20,.95)'};g['F'+k]=d;}
   const resLoc=(view==='blue'||view==='proj')?s.resHist[Math.max(0,s.resHist.length-2)]:s.R.res;
-  const rp=RESP[resLoc];const ra=s.R.resN*3;
+  const rp=RESP[resLoc];const ra=Math.max(0,Math.round(s.R.resN*8));
   g.resA={x:rp[0][0],z:rp[0][1],ry:Math.PI,alive:ra,dead:s.R.resN<=0,flag:{t:'預',c:'res',h:3.8}};
   g.resB={x:rp[1][0],z:rp[1][1],ry:Math.PI,alive:ra,dead:s.R.resN<=0,flag:{t:'預',c:'res',h:3.8}};
   if((view==='blue'||view==='proj')&&s.r>0)g.resA.tag={t:'斥候回報（上回合位置）',c:'rgba(30,60,120,.92)'};
@@ -82,7 +82,7 @@ function orderArrows(e,side,o){const s=e.s,ro=e.ro,A=[];if(!o)return A;
     for(const k of['L','R']){const sg=k==='L'?-1:1,nm=ro[k][0];if(!nm||s.B.W[k].n<=0)continue;const p=pos[nm];
       if(o.w==='斜')A.push({from:p,to:[sg*WF[1][0],WF[1][1]],color:0xffd24a});
       if(o.w==='急')A.push({from:p,to:[sg*WCUT[1][0],WCUT[1][1]],color:0xff9a3a});
-      if(o.w==='收')A.push({from:[sg*21,-21],to:[sg*7.5,-25],color:0xffb030});
+      if(o.w==='收')A.push({from:[sg*25,-21],to:[sg*11.4,-25],color:0xffb030});
       if(o.w==='集'){const sl=awlSlots(4+ro.D.length+2,ct);const t=sl[Math.min(sl.length-1,ro.C.length+ro.D.length+(k==='L'?0:1))];A.push({from:p,to:[t[0],t[1]],color:0x6fe0ff});}}}
   else{if(o.f==='壓')A.push({from:[0,-21],to:[0,-12],color:0xff6040});
     if(o.f==='探')A.push({from:[3,-21],to:[3,12],color:0xe8e8e8,w:.5});
@@ -91,22 +91,22 @@ function orderArrows(e,side,o){const s=e.s,ro=e.ro,A=[];if(!o)return A;
 function moveRes(from,to){if(from===to)return to;if(from==='rear')return to;return 'rear';}
 function fxOf(prev,next){const h=next.s.hist[next.s.hist.length-1],L=next.s.log[next.s.log.length-1]||[];const fx=[];
   if(h.bo.c==='攻'||h.ro.f==='壓')fx.push({x:0,z:-19});
-  if(h.bo.w==='收'||h.bo.w==='急')for(const k of['L','R'])if(prev.s.B.W[k].n>0)fx.push({x:(k==='L'?-1:1)*8,z:-25});
-  if(L.some(t=>t.includes('截擊')))fx.push({x:-12,z:-31},{x:12,z:-31});
+  if(h.bo.w==='收'||h.bo.w==='急')for(const k of['L','R'])if(prev.s.B.W[k].n>0)fx.push({x:(k==='L'?-1:1)*11.4,z:-25});
+  if(L.some(t=>t.includes('截擊')))fx.push({x:-15.5,z:-32},{x:15.5,z:-32});
   return fx;}
 
 /* ====================== 文字 ====================== */
 const OPT={
   c:{待:['待命','中部不接敵；已經接敵的話，就退回本陣。'],
-     纏:['接戰牽制','中部上前和敵軍交戰，把敵軍拖住，但不求打穿。已經接敵之後，防守 ×1.25。'],
-     攻:['猛攻',`中部全力進攻。中部後方集中的後曲不到 2 個時，攻擊力 ×${P.thin}（後陣不厚）。猛攻的那一回合，紅軍會看到你後陣有多厚。`]},
+     纏:['接戰牽制','中部上前和敵軍交戰，把敵軍拖住，但不求打穿。已經接敵之後，防守力多四分之一。'],
+     攻:['猛攻',`中部全力進攻。中部後方集中的後曲不到 2 個時，攻擊力只剩七成（後陣不厚）。猛攻的那一回合，紅軍會看到你後陣有多厚。`]},
   w:{梯:['梯次在後','兩翼留在中部後方兩側，掩護中部。陣線斷絕時，用這個命令補位。'],
      斜:['依序斜出','兩翼一曲接一曲斜出，回合結束時到達敵陣兩側：陣形開始變成鴈行（兩翼張開的牛角形）。若紅軍預備隊正守在兩側，途中會被截擊：損 1，退回原位。'],
-     急:['急進包抄',`這一回合就衝到敵陣兩側並立刻側擊，但陣線斷絕，側擊戰力 ×${P.cut}，直到補位。`],
-     收:['收攏側擊',`兩翼從側面向內打，側擊 ×${P.side}。中部同時接敵時（接戰牽制或猛攻），三面夾擊再 ×4/3。`],
+     急:['急進包抄',`這一回合就衝到敵陣兩側並立刻側擊，但陣線斷絕，側擊力只剩一半，直到補位。`],
+     收:['收攏側擊',`兩翼從側面向內打，側擊力多一半。中部同時接敵時（接戰牽制或猛攻）就是三面夾擊，側擊力再多三分之一。`],
      集:['向中部集中','兩翼各抽一曲補到中部後方：後陣厚度 +2，兩翼各 −1。陣形會變成錐行（又尖又厚，準備從中央突破）。紅軍看不到這個調動。']},
-  f:{頂:['頂住',`中區防守 ×${P.hold}。`],
-     壓:['前壓',`中區向前攻擊藍軍中部（向前移動 ×${P.arrive}）。預備隊在中央時一起壓上。`],
+  f:{頂:['頂住','中區防守力多四分之一。'],
+     壓:['前壓',`中區向前攻擊藍軍中部（邊走邊打，攻擊力少兩成）。預備隊在中央時一起壓上。`],
      探:['試探','派人摸清藍軍後陣：回合結束時，得知藍軍中部後方集中了幾個曲。']},
   res:{rear:['後方居中',`預備隊在方陣後方正中：中區防守 +${P.RES/4}（依預備隊剩下的兵力），兩邊都能接應。`],
        center:['調往中央','預備隊頂在中區後面：中區防守與前壓加上預備隊全部的兵力。'],
@@ -136,7 +136,7 @@ function situation(e,view){const s=e.s,B=s.B,R=s.R,out=[];
   return out;}
 function helpHtml(side){
   const win=`<b>勝負</b><ul><li>藍軍勝：紅軍中區被突穿，或紅軍左右兩區都被擊潰。</li><li>紅軍勝：藍軍中部潰散、藍軍兵力剩 ${P.collapseTotal} 以下，或第 ${P.ROUNDS} 回合結束時方陣還在。</li><li>同一回合雙方都達成：和局。</li></ul>`;
-  const fight=`<b>交戰怎麼算</b><ul><li>攻方戰力 ÷ 守方戰力：2 倍以上，守方這一區被擊潰；1.5～2 倍，守方動搖並損 1（同一處動搖兩次就潰）；1～1.5 倍，雙方各損 1；不到 1 倍，攻方受挫損 1。</li><li>規則裡沒有擲骰子：結果只由雙方的命令決定。</li></ul>`;
+  const fight=`<b>交戰怎麼算</b><ul><li>比雙方的戰力：攻方是守方的 2 倍以上，守方這一處被擊潰；1.5 到 2 倍，守方動搖並損 1（同一處動搖兩次就潰）；1 到 1.5 倍，雙方各損 1；比守方弱，攻方受挫損 1。</li><li>命令會讓戰力變多或變少，例如「多四分之一」「只剩七成」，選項說明裡都有寫。</li><li>規則裡沒有擲骰子：結果只由雙方的命令決定。</li></ul>`;
   if(side==='blue')return `<p>你是<b>藍軍（攻方）</b>，指揮鴈行陣的十個曲：中部前列戊、己、丁、壬共 ${P.M} 曲，左翼丙乙甲、右翼癸庚辛各 ${P.NW} 曲。對面是紅軍方陣：前排左、中、右各 ${P.F}，後面還有一支預備隊 ${P.RES}。</p>
     <p>每回合同時下兩個命令：<b>中部</b>怎麼打、<b>兩翼</b>怎麼動。錐行還是鴈行，不用先決定：後曲往哪裡去，就打成哪一種。</p>
     <b>你看得到、看不到什麼</b><ul><li>紅軍前排的命令與各區損傷：看得到。</li><li>紅軍預備隊：斥候回報，但<b>晚一回合</b>。</li></ul>
@@ -247,17 +247,17 @@ function finaleSteps(fin){const s=fin.s,ro=fin.ro,why=s.over.why,win=s.over.win;
   const routRes=g=>{for(const q of['resA','resB']){g[q].rout=true;}};
   const redGenFlee=g=>{g['紅將'].z-=24;g['紅將'].dur=2600;};
   const blueRetreat=(g,dz)=>{for(const nm of live){g[nm].z+=dz;g[nm].dur=2600;}g['將'].z+=dz;g['將'].dur=2600;};
-  if(win==='和'){const g=G();routRed(g,['C','L','R']);for(const nm of ro.C)g[nm]&&(g[nm].rout=true);steps.push({g,fx:[{x:0,z:-22},{x:-8,z:-25},{x:8,z:-25}],focus:[0,-22,60],cap:'雙方同時崩潰'});return steps;}
+  if(win==='和'){const g=G();routRed(g,['C','L','R']);for(const nm of ro.C)g[nm]&&(g[nm].rout=true);steps.push({g,fx:[{x:0,z:-22},{x:-11,z:-25},{x:11,z:-25}],focus:[0,-22,60],cap:'雙方同時崩潰'});return steps;}
   if(why.includes('突穿')){
     const sl=awlSlots(ro.C.length+ro.D.length,true);const order=['戊','丁','壬','己'].filter(nm=>ro.C.includes(nm)).concat(ro.D);
     const g1=G();order.forEach((nm,i)=>{g1[nm].x=sl[i][0];g1[nm].z=sl[i][1]-10;g1[nm].dur=2000;});routRed(g1,['C']);
     steps.push({g:g1,fx:[{x:0,z:-24},{x:-2,z:-27},{x:2,z:-22}],focus:[0,-24,60],cap:'錐行衝進紅軍中區'});
     const g2=JSON.parse(JSON.stringify(g1));order.forEach(nm=>{g2[nm].z-=14;g2[nm].dur=2400;});routRed(g2,['L','R']);routRes(g2);redGenFlee(g2);
-    steps.push({g:g2,fx:[{x:-5,z:-30},{x:5,z:-30},{x:0,z:-36}],cap:'中區被突穿，方陣從中間裂開'});return steps;}
+    steps.push({g:g2,fx:[{x:-7,z:-30},{x:7,z:-30},{x:0,z:-36}],cap:'中區被突穿，方陣從中間裂開'});return steps;}
   if(why.includes('合圍')){
-    const g1=G();for(const k of['L','R']){const sg=k==='L'?-1:1;ro[k].forEach((nm,i)=>{g1[nm].x=sg*(8.4+i*0.6);g1[nm].z=-30+i*5;g1[nm].dur=2000;});}routRed(g1,['L','R']);
-    steps.push({g:g1,fx:[{x:-7,z:-27},{x:7,z:-27},{x:-7,z:-22},{x:7,z:-22}],focus:[0,-25,58],cap:'兩翼從側面收攏'});
-    const g2=JSON.parse(JSON.stringify(g1));for(const nm of[...ro.C,...ro.D]){g2[nm].z-=5;g2[nm].dur=2000;}for(const k of['L','R']){const sg=k==='L'?-1:1;ro[k].forEach(nm=>{g2[nm].x=sg*5.5;g2[nm].dur=2000;});}
+    const g1=G();for(const k of['L','R']){const sg=k==='L'?-1:1;ro[k].forEach((nm,i)=>{g1[nm].x=sg*(12.2+i*0.6);g1[nm].z=-30+i*5;g1[nm].dur=2000;});}routRed(g1,['L','R']);
+    steps.push({g:g1,fx:[{x:-10.5,z:-27},{x:10.5,z:-27},{x:-10.5,z:-22},{x:10.5,z:-22}],focus:[0,-25,58],cap:'兩翼從側面收攏'});
+    const g2=JSON.parse(JSON.stringify(g1));for(const nm of[...ro.C,...ro.D]){g2[nm].z-=5;g2[nm].dur=2000;}for(const k of['L','R']){const sg=k==='L'?-1:1;ro[k].forEach(nm=>{g2[nm].x=sg*9.6;g2[nm].dur=2000;});}
     routRed(g2,['C']);routRes(g2);redGenFlee(g2);steps.push({g:g2,fx:[{x:0,z:-25},{x:0,z:-30}],cap:'三面合圍，方陣被夾碎'});return steps;}
   if(why.includes('中部潰散')){
     const g1=G();for(const k of['L','C','R']){g1['F'+k].z+=6;g1['F'+k].dur=2000;}
@@ -273,6 +273,7 @@ function playFinale(fin){stopFinale();finaleCap='';const steps=finaleSteps(fin);
 // 決戰的字幕寫在側欄的「決戰中」卡片裡，不蓋戰場
 let finaleCap='';function toastStage(t){finaleCap=t;const d=document.getElementById('fcap');if(d)d.textContent=t;}
 function render3D(tl,view,arrows,animate,prevEntry){const e=tl[tl.length-1];
+  if(animate&&prevEntry){W.command('blue');W.command('red');}   // 結算：兩軍主將舉刀下令
   if(e.s.over&&animate&&prevEntry&&!prevEntry.s.over){const d=sceneDesc(e,'truth');d.arrows=[];d.fx=fxOf(prevEntry,e);lastDesc=d;W.show(d,true);playFinale(e);return;}
   if(e.s.over&&finaleKey===e.s.hist.length+':'+e.s.over.why)return;   // 動畫播過了：保留決戰後的畫面
   if(!e.s.over)stopFinale();const d=sceneDesc(e,view);d.arrows=arrows||[];if(animate&&prevEntry)d.fx=fxOf(prevEntry,e);lastDesc=d;W.show(d,animate);}
@@ -299,8 +300,8 @@ const hexc=n=>'#'+(n>>>0).toString(16).padStart(6,'0');
 function optSvg(e,sd,g,k){const s=e.s,d=sceneDesc(e,sd).groups;let h='';
   const rect=(x,z,w,l,c,op)=>h+=`<rect x="${(x-w/2).toFixed(1)}" y="${(z-l/2).toFixed(1)}" width="${w}" height="${l}" fill="${c}" opacity="${op||1}"/>`;
   for(const nm of QU){const u=d[nm];if(u.hidden)continue;rect(u.x,u.z,5,5,u.dead?'#5a5048':'#4f86d8',u.dead?.6:1);}
-  for(const q of['L','C','R']){const u=d['F'+q];rect(u.x,u.z,4.4,9.2,u.rout?'#6a3a30':'#c8452f',u.alive>0?1:.4);}
-  for(const q of['resA','resB']){const u=d[q];rect(u.x,u.z,3.4,4.4,'#9a3a24',u.dead?.4:.9);}
+  for(const q of['L','C','R']){const u=d['F'+q];rect(u.x,u.z,7,9.4,u.rout?'#6a3a30':'#c8452f',u.alive>0?1:.4);}
+  for(const q of['resA','resB']){const u=d[q];rect(u.x,u.z,4.6,9.4,'#9a3a24',u.dead?.4:.9);}
   const o={[g]:k};let A=orderArrows(e,sd,o);const lab=(x,z,t)=>h+=`<text x="${x}" y="${z}" class="sl" ${sd==='red'?`transform="rotate(180 ${x} ${z})"`:''}>${t}</text>`;
   if(g==='c'&&k==='纏'&&s.B.contact)h+=`<path d="M-6 -19.5 L-3 -17.5 L0 -19.5 L3 -17.5 L6 -19.5" stroke="#ffd24a" stroke-width="1.3" fill="none"/>`;
   if(g==='c'&&k==='待'&&!s.B.contact)lab(0,24,'原地');
@@ -450,7 +451,7 @@ if(side){
     h+=helpCard(side,helpOpen)+fullLog(s,s.over?'truth':side);
     paintSide(h,!!anim);
     $('#side').querySelectorAll('.o').forEach(b=>b.onclick=()=>{if(!isCmd())return;draft[b.dataset.g]=b.dataset.v;draft.__touched=1;helpOpen=false;draw(null,false);});
-    const sb=$('#bSend');if(sb&&!sb.disabled)sb.onclick=async()=>{const o=stripD(draft);await be.set('orders/'+side,{r:s.r,o,id:myId,t:Date.now()});toast('命令已送出');};
+    const sb=$('#bSend');if(sb&&!sb.disabled)sb.onclick=async()=>{const o=stripD(draft);await be.set('orders/'+side,{r:s.r,o,id:myId,t:Date.now()});W.command(side);toast('命令已送出');};
     const bc=$('#bClaim');if(bc)bc.onclick=()=>{claim();toast('現在由你指揮');};
     const rv=$('#bReveal');if(rv)rv.onclick=()=>showReveal(tl[tl.length-1]);
     $('#side').querySelectorAll('details').forEach(d=>d.ontoggle=()=>{if(d.querySelector('summary').textContent.includes('須知'))helpOpen=d.open;});}

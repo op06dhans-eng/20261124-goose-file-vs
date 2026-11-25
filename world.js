@@ -70,7 +70,7 @@ function buildWorld(){
      const col=new THREE.Color();for(const pt of tp){const im=new THREE.InstancedMesh(BOX,new THREE.MeshLambertMaterial({color:0xffffff}),sp.length);sp.forEach((pl,i)=>{e4.set(0,pl.ry,0,'YXZ');q4.setFromEuler(e4);p4.set(pl.x,pl.y,pl.z);s4.setScalar(pl.s);PM.compose(p4,q4,s4);e4.set(0,pt.ry||0,0);q4.setFromEuler(e4);p4.set(0,pt.y,0);s4.set(pt.w,pt.h,pt.d);CM.compose(p4,q4,s4);m4.multiplyMatrices(PM,CM);im.setMatrixAt(i,m4);col.setHex(pt.c);col.offsetHSL(0,0,rand(-.04,.04));im.setColorAt(i,col);});world.add(im);}}}
   if(holo){// 戰場範圍的淡圈
     const ring=(x,z,r,c)=>{const m=new THREE.Mesh(new THREE.RingGeometry(r-.25,r,64),new THREE.MeshBasicMaterial({color:c,transparent:true,opacity:.5,side:THREE.DoubleSide}));m.rotation.x=-PI/2;m.position.set(x,.06,z);world.add(m);};
-    ring(0,-28,14,0xff5a4a);ring(0,4,34,0x43c6ff);}
+    ring(0,-30,19,0xff5a4a);ring(0,4,34,0x43c6ff);}
 }
 
 
@@ -81,7 +81,7 @@ function makeGeneral(side,holo){const K=GENC[side];const mats={};
   const M=c=>mats[c]||(mats[c]=holo?new THREE.MeshBasicMaterial({color:c}):new THREE.MeshLambertMaterial({color:c}));
   const root=new THREE.Group(),body=new THREE.Group();root.add(body);body.scale.setScalar(1.7);
   const B=(w,h,d,c,x,y,z,p,rx,ry,rz)=>{const m=new THREE.Mesh(BOX,M(c));m.scale.set(w,h,d);m.position.set(x,y,z);if(rx||ry||rz){m.rotation.order='YXZ';m.rotation.set(rx||0,ry||0,rz||0);}p.add(m);return m;};
-  for(const x of[.16,-.16]){const g=new THREE.Group();g.position.set(x,.68,0);body.add(g);B(.27,.4,.3,0x3a2a20,0,-.2,0,g);B(.26,.34,.3,0xd6a94e,0,-.5,0,g);B(.3,.05,.32,K.skirt,0,-.32,0,g);B(.29,.14,.38,0x1d1712,0,-.63,.03,g);B(.2,.1,.12,0x1d1712,0,-.58,.25,g);}
+  const legs=[];for(const x of[.16,-.16]){const g=new THREE.Group();g.position.set(x,.68,0);body.add(g);legs.push(g);B(.27,.4,.3,0x3a2a20,0,-.2,0,g);B(.26,.34,.3,0xd6a94e,0,-.5,0,g);B(.3,.05,.32,K.skirt,0,-.32,0,g);B(.29,.14,.38,0x1d1712,0,-.63,.03,g);B(.2,.1,.12,0x1d1712,0,-.58,.25,g);}
   const up=new THREE.Group();up.position.y=.66;body.add(up);
   B(.68,.14,.46,0x2a1a10,0,.1,0,up);B(.16,.12,.05,0xe8c870,0,.1,.24,up);
   for(let i=0;i<9;i++){const a=i/9*TAU;const g=new THREE.Group();g.position.set(Math.sin(a)*.3,.03,Math.cos(a)*.22);g.rotation.order='YXZ';g.rotation.set(-.22,a,0);up.add(g);B(.2,.5,.05,i%2?K.dark:K.skirt,0,-.25,0,g);B(.22,.05,.06,0xd6a94e,0,-.5,0,g);}
@@ -111,17 +111,24 @@ function makeGeneral(side,holo){const K=GENC[side];const mats={};
   B(.7,.07,.07,0xd6a94e,0,-.95,0,cape);const emb=new THREE.Mesh(discGeo,M(0xd6a94e));emb.scale.set(1.3,1.3,1);emb.position.set(0,-.36,-.045);cape.add(emb);const emb2=new THREE.Mesh(discGeo,M(K.capeIn));emb2.scale.set(.75,.75,1);emb2.position.set(0,-.36,-.06);cape.add(emb2);
   // 臂甲（右手握刀、左手按腰）
   const arm=(x,rx)=>{const g=new THREE.Group();g.position.set(x,.74,0);g.rotation.x=rx;up.add(g);B(.2,.2,.62,K.dark,0,0,.31,g);B(.22,.22,.2,0xd6a94e,0,0,.52,g);B(.16,.16,.14,0xe6b88c,0,0,.68,g);return g;};
-  arm(.46,1.1);arm(-.46,.35);
+  const armL=arm(.46,1.1),armR=arm(-.46,.35);
   // 偃月刀：豎持於右側
   const grip=new THREE.Group();grip.position.set(-.5,.95,.55);grip.rotation.x=-PI/2+.08;up.add(grip);
   B(.075,.075,3.3,0x5a2414,0,0,.6,grip);B(.1,.1,.18,0xd6a94e,0,0,-1.0,grip);B(.12,.12,.22,0xe8c870,0,0,2.2,grip);
   const head=new THREE.Mesh(new THREE.ConeGeometry(.14,1.1,4),M(0xe2e8ea));head.rotation.x=PI/2;head.scale.x=.42;head.position.set(0,0,2.86);grip.add(head);B(.05,.22,.14,0xe2e8ea,0,0,2.36,grip);
   for(const a of[-.5,0,.5]){const m=new THREE.Mesh(BOX,M(0xc8281c));m.scale.set(.08,.45,.07);m.position.set(a*.12,-.25,2.2);grip.add(m);}
+  root.userData={legs,armL,armR,grip,armL0:armL.rotation.x,armR0:armR.rotation.x,grip0:grip.rotation.x};
   return root;}
 
 /* ---------- 部隊 ---------- */
 // 一個 group＝一個曲（16 人）或紅軍方陣的一區（32 人）或一支預備隊（12 人）
-const PARTS=[{k:'leg',w:.5,h:.74,d:.26,y:.37},{k:'torso',w:.56,h:.62,d:.34,y:1.05},{k:'head',w:.36,h:.36,d:.36,y:1.56},{k:'helm',w:.42,h:.2,d:.42,y:1.8},{k:'spear',w:.06,h:2.4,d:.06,x:.36,y:1.4}];
+// 士兵：兩腿、兩臂各自以髖、肩為軸擺動（走路時兩腳交替、手臂反向擺）
+const PARTS=[
+  {k:'leg',w:.23,h:.74,d:.26,px:-.13,py:.74,oy:-.37,sw:1},{k:'leg',w:.23,h:.74,d:.26,px:.13,py:.74,oy:-.37,sw:-1},
+  {k:'torso',w:.56,h:.62,d:.34,px:0,py:1.05,oy:0},
+  {k:'arm',w:.15,h:.58,d:.17,px:-.36,py:1.32,oy:-.27,sw:-.75},{k:'arm',w:.15,h:.58,d:.17,px:.36,py:1.32,oy:-.27,sw:.25},
+  {k:'head',w:.36,h:.36,d:.36,px:0,py:1.56,oy:0},{k:'helm',w:.42,h:.2,d:.42,px:0,py:1.8,oy:0},
+  {k:'spear',w:.06,h:2.4,d:.06,px:.44,py:1.4,oy:0}];
 const G={};let MAXN=0,meshes=[],flagSpr={},tagSpr={};
 function flagTex(txt,bg,fg,glow){const c=document.createElement('canvas');c.width=128;c.height=160;const g=c.getContext('2d');
   g.fillStyle=bg;g.beginPath();g.moveTo(0,0);g.lineTo(128,0);g.lineTo(128,150);g.lineTo(104,134);g.lineTo(84,150);g.lineTo(64,134);g.lineTo(44,150);g.lineTo(24,134);g.lineTo(0,150);g.closePath();g.fill();
@@ -132,8 +139,8 @@ function defineGroups(){ // 固定的部隊清單（位置由 show() 決定）
   const add=(id,side,cols,rows,sp)=>{G[id]={id,side,cols,rows,n:cols*rows,sp,base:MAXN,x:0,z:0,fx:0,fz:0,tx:0,tz:0,ry:0,alive:cols*rows,dead:false,rout:false,hidden:false,flag:null,tag:null,t0:0,dur:1,jit:[]};
     for(let i=0;i<cols*rows;i++)G[id].jit.push([rand(-.1,.1),rand(-.1,.1),rand(0,TAU),rand(-2,2),rand(4,14)]);MAXN+=cols*rows;};
   '甲乙丙丁戊己庚辛壬癸'.split('').forEach(k=>add(k,'b',4,4,1.3));
-  ['L','C','R'].forEach(k=>add('F'+k,'r',4,8,1.2));
-  add('resA','res',3,4,1.2);add('resB','res',3,4,1.2);
+  ['L','C','R'].forEach(k=>add('F'+k,'r',6,8,1.2));
+  add('resA','res',4,8,1.2);add('resB','res',4,8,1.2);
   add('將','gen',0,1,1);G['將'].model='blue';add('紅將','rgen',0,1,1);G['紅將'].model='red';}
 function buildUnits(){
   if(units){scene.remove(units);units.traverse(o=>{if(o.material){if(o.material.map)o.material.map.dispose();o.material.dispose();}});}
@@ -141,7 +148,7 @@ function buildUnits(){
   const col=new THREE.Color();
   for(const pt of PARTS){const im=new THREE.InstancedMesh(BOX,holo?new THREE.MeshBasicMaterial({color:0xffffff}):new THREE.MeshLambertMaterial({color:0xffffff}),MAXN);im.frustumCulled=false;
     for(const g of Object.values(G))for(let i=0;i<g.n;i++){const k=pt.k;const side=g.side;
-      const hx=k==='torso'?(side==='b'||side==='gen'?T.blue:side==='r'?T.red:T.res):k==='helm'?(side==='b'||side==='gen'?T.bHelm:T.rHelm):k==='head'?T.skin:k==='leg'?T.leg:(holo?(side==='b'?T.blue:T.red):0x4a3020);
+      const hx=(k==='torso'||k==='arm')?(side==='b'||side==='gen'?T.blue:side==='r'?T.red:T.res):k==='helm'?(side==='b'||side==='gen'?T.bHelm:T.rHelm):k==='head'?T.skin:k==='leg'?T.leg:(holo?(side==='b'?T.blue:T.red):0x4a3020);
       col.setHex(hx);col.offsetHSL(0,0,rand(-.04,.04));im.setColorAt(g.base+i,col);}
     units.add(im);meshes.push(im);}
   for(const g of Object.values(G))if(g.model){g.mesh=makeGeneral(g.model,holo);units.add(g.mesh);}
@@ -160,22 +167,30 @@ function setTag(id,t,force){const g=G[id];const key=t?t.t+t.c:'';if(!force&&g._t
   const tex=tagTex(t.t,t.c||'rgba(160,30,20,.92)');const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,depthTest:false,depthWrite:false,fog:false}));const s=.045;sp.scale.set(tex.userData.w*s,tex.userData.h*s,1);sp.renderOrder=10;units.add(sp);tagSpr[id]=sp;}
 
 // 依各組現在位置更新每個士兵
+const STRIDE=.85;
 function layoutUnits(now){
-  const walk=(now/1000)*7;
   for(const g of Object.values(G)){
-    const k=clamp((now-g.t0)/g.dur,0,1),e=k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2;const moving=k<1&&(Math.abs(g.tx-g.fx)+Math.abs(g.tz-g.fz)>.1);
-    g.x=g.fx+(g.tx-g.fx)*e;g.z=g.fz+(g.tz-g.fz)*e;
+    const k=clamp((now-g.t0)/g.dur,0,1),e=k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2;const dx=g.tx-g.fx,dz=g.tz-g.fz,L=Math.hypot(dx,dz);const moving=k<1&&L>.1;
+    g.x=g.fx+dx*e;g.z=g.fz+dz*e;
+    // 走路：步伐依實際走過的距離推進（腳不打滑）；走得快步幅大、像在跑
+    const dist=e*L,speed=L/Math.max(.3,g.dur/1000),amp=clamp(.38+speed*.035,.38,.85),yawMove=Math.atan2(dx,dz)+PI;
     const c=Math.cos(g.ry),s=Math.sin(g.ry);
-    for(let i=0;i<g.n;i++){const r=Math.floor(i/g.cols),cc=i%g.cols;const lx=(cc-(g.cols-1)/2)*g.sp+g.jit[i][0],lz=(r-(g.rows-1)/2)*g.sp+g.jit[i][1];
-      let x=g.x+lx*c+lz*s,z=g.z-lx*s+lz*c,ry=g.ry,lying=false,hide=g.hidden;
-      if(g.dead||i>=g.alive){lying=true;}
-      if(g.rout&&!lying){const j=g.jit[i];if(i%3===0)lying=true;else{x+=Math.cos(j[2])*j[3];z+=(g.side==='b'?1:-1)*j[4]*Math.min(1,k*1.2);ry=g.ry+PI;}}
-      const bob=moving&&!lying?Math.abs(Math.sin(walk+i))*.18:0;
+    for(let i=0;i<g.n;i++){const r=Math.floor(i/g.cols),cc=i%g.cols,j=g.jit[i];const lx=(cc-(g.cols-1)/2)*g.sp+j[0],lz=(r-(g.rows-1)/2)*g.sp+j[1];
+      let x=g.x+lx*c+lz*s,z=g.z-lx*s+lz*c,ry=g.ry,lying=false,hide=g.hidden,ph=0,a=0;
+      if(g.dead||i>=g.alive)lying=true;
+      if(moving&&!lying){ry=yawMove;ph=dist/STRIDE*PI+j[2]*.25;a=amp*Math.min(1,dist/.4,(L-dist)/.4+.15);}
+      if(g.rout&&!lying){if(i%3===0)lying=true;else{const run=j[4]*Math.min(1,k*1.2);x+=Math.cos(j[2])*j[3]*Math.min(1,k*1.2);z+=(g.side==='b'?1:-1)*run;ry=g.side==='b'?PI:0;if(k<1/1.2){ph=run/STRIDE*PI+j[2];a=.85;}}}
+      const bob=a?.035+.035*Math.cos(2*ph):0,sn=Math.sin(ph);
       e4.set(lying?PI/2:0,ry,0,'YXZ');q4.setFromEuler(e4);p4.set(x,(lying?.25:0)+bob,z);s4.setScalar(hide?0:1);PM.compose(p4,q4,s4);
-      for(let pi=0;pi<PARTS.length;pi++){const pt=PARTS[pi];q4.identity();p4.set(pt.x||0,lying?pt.y*.9-0.1:pt.y,0);s4.set(pt.w,pt.h,pt.d);CM.compose(p4,q4,s4);m4.multiplyMatrices(PM,CM);meshes[pi].setMatrixAt(g.base+i,m4);
-        if(lying&&pt.k==='torso'&&!g._deadCol?.[i]){}}
+      for(let pi=0;pi<PARTS.length;pi++){const pt=PARTS[pi];const an=pt.sw&&!lying?sn*a*pt.sw*(pt.k==='arm'?.8:1):0;
+        e4.set(an,0,0,'YXZ');q4.setFromEuler(e4);p4.set(pt.px,pt.py+pt.oy*Math.cos(an),-pt.oy*Math.sin(an));if(lying)p4.y=p4.y*.9-.1;s4.set(pt.w,pt.h,pt.d);CM.compose(p4,q4,s4);m4.multiplyMatrices(PM,CM);meshes[pi].setMatrixAt(g.base+i,m4);}
     }
-    if(g.mesh){g.mesh.position.set(g.x,0,g.z);g.mesh.rotation.y=g.ry;g.mesh.visible=!g.hidden;}
+    if(g.mesh){const u=g.mesh.userData;g.mesh.position.set(g.x,0,g.z);g.mesh.visible=!g.hidden;
+      let ph=0,a=0;if(moving){g.mesh.rotation.y=Math.atan2(dx,dz);ph=dist/(STRIDE*1.4)*PI;a=amp*Math.min(1,dist/.5,(L-dist)/.5+.15);}else g.mesh.rotation.y=g.ry;
+      const sn=Math.sin(ph);u.legs[0].rotation.x=sn*a;u.legs[1].rotation.x=-sn*a;u.armL.rotation.x=u.armL0-sn*a*.6;g.mesh.position.y=a?.04+.04*Math.cos(2*ph):0;
+      // 下令：右手舉刀向前一指，停一下再收回
+      let p=0;if(g.cmdT0){const t=(now-g.cmdT0)/1000;p=t<.35?t/.35:t<1.9?1:t<2.4?1-(t-1.9)/.5:0;if(t>2.4)g.cmdT0=0;p=p*p*(3-2*p);}
+      u.armR.rotation.x=u.armR0+(-.25-u.armR0)*p;u.armR.rotation.z=.25*p;u.grip.rotation.x=u.grip0+(-.32-u.grip0)*p;u.grip.position.set(-.5+.05*p,.95+.05*p,.55+.35*p);}
     const fs=flagSpr[g.id];if(fs){const show=!g.hidden&&!g.dead;fs.pole.visible=fs.sp.visible=show;const hw=g.n?(g.cols-1)/2*g.sp+1.2:2.2;fs.pole.position.set(g.x+hw,fs.h/2,g.z-1);fs.sp.position.set(g.x+hw+.85,fs.h-.8,g.z-1);}
     const ts=tagSpr[g.id];if(ts){ts.visible=!g.hidden;ts.position.set(g.x,6.6,g.z);}
   }
@@ -236,6 +251,7 @@ window.W={
       setFlag(id,d.flag||null);setTag(id,d.tag||null);}
     setArrows(desc.arrows||[]);
     if(animate&&desc.fx)desc.fx.forEach((f,i)=>setTimeout(()=>burst(f.x,f.z,f.color),900+i*180));},
-  arrows:setArrows
+  arrows:setArrows,
+  command(side){const g=G[side==='blue'?'將':'紅將'];if(g)g.cmdT0=performance.now();}
 };
 })();

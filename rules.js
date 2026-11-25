@@ -23,7 +23,7 @@ function blueLegal(s){const out=[];const pos=wingPos(s);const W=s.B.W;
 function redLegal(s){const out=[];for(const f of['頂','壓','探'])for(const res of['rear','center','flanks'])out.push({f,res});return out;}
 function moveRes(from,to){if(from===to)return to;if(from==='rear')return to;if(to==='rear')return 'rear';return 'rear';} // 中央↔兩側要經過後方
 // 比值：對方這一處已經沒有兵力時記為 99（一定擊潰），戰報寫「對方已無兵力」而不是數字
-const ratio=(a,d)=>d>0?a/d:99;const qtxt=q=>q>=99?'對方這一處已無兵力':q.toFixed(2)+' 倍';
+const ratio=(a,d)=>d>0?a/d:99;const qtxt=(q,a,b)=>q>=99?b+'這一處已無兵力':a+'戰力是'+b+'的 '+q.toFixed(2)+' 倍';
 function outcome(q){return q>=2?'潰':q>=1.5?'退':q>=1?'損':'挫';}
 function step(s0,bo,ro){const s=clone(s0);
   if(!blueLegal(s).some(o=>o.c===bo.c&&o.w===bo.w))bo={c:bo.c,w:'梯'};   // 不合法的兩翼命令一律當作「梯次在後」
@@ -52,9 +52,9 @@ function step(s0,bo,ro){const s=clone(s0);
   const bAtt=(B.M+B.D)*(B.D>=2?1:P.thin)*(arriving?P.arrive:1);
   const rAtt=(R.F.C+inC())*P.arrive;
   if(bo.c==='攻'){s.seenD=B.D;s.seenDAt=s.r;}s.lastBlueAtk=bo.c==='攻';s.lastRedPress=ro.f==='壓';
-  const hitBlue=(q,why)=>{const o=outcome(q);say(`${why}：${o==='挫'?'紅軍受挫':'藍軍中部'+{潰:'潰散',退:'動搖',損:'受損'}[o]}（${qtxt(q)}）`);
+  const hitBlue=(q,why)=>{const o=outcome(q);say(`${why}：${o==='挫'?'紅軍受挫':'藍軍中部'+{潰:'潰散',退:'動搖',損:'受損'}[o]}（${qtxt(q,'紅軍','藍軍')}）`);
     if(o==='潰')B.M=0;else if(o==='退'){B.shake++;loseBlueC();if(B.shake>=2)B.M=0;}else if(o==='損'){loseBlueC();loseRed('C');}else loseRed('C');};
-  const hitRedC=(q,why)=>{const o=outcome(q);say(`${why}：${o==='挫'?'藍軍受挫':'紅軍中區'+{潰:'被突穿',退:'動搖',損:'受損'}[o]}（${qtxt(q)}）`);
+  const hitRedC=(q,why)=>{const o=outcome(q);say(`${why}：${o==='挫'?'藍軍受挫':'紅軍中區'+{潰:'被突穿',退:'動搖',損:'受損'}[o]}（${qtxt(q,'藍軍','紅軍')}）`);
     if(o==='潰')R.broken.C=true;else if(o==='退'){R.shake.C++;loseRed('C');if(R.shake.C>=2)R.broken.C=true;}else if(o==='損'){loseRed('C');loseBlueC();}else loseBlueC();};
   if(bo.c==='攻'&&ro.f==='壓'){const q=ratio(bAtt,rAtt);if(q>=1)hitRedC(q,'雙方中部對衝');else hitBlue(ratio(rAtt,bAtt),'雙方中部對衝');}
   else if(bo.c==='攻')hitRedC(ratio(bAtt,(R.F.C+supC())*(ro.f==='頂'?P.hold:1)),'藍軍中部猛攻');
@@ -63,7 +63,7 @@ function step(s0,bo,ro){const s=clone(s0);
   const live=strike.filter(k=>B.W[k].n>0);
   const three=live.length===2&&B.contact&&bo.c!=='待';if(three)say('三面夾擊');
   for(const k of live){const w=B.W[k];const att=w.n*P.side*(w.cut?P.cut:1)*(three?P.pincer:1),def=R.F[k]+supF();const q=def>0?att/def:99,o=outcome(q);const nm=k==='L'?'左':'右';
-    say(`${nm}翼側擊${w.cut?'（陣線斷絕）':''}：${o==='挫'?nm+'翼受挫':'紅軍'+nm+'側'+{潰:'被擊潰',退:'動搖',損:'受損'}[o]}（${att.toFixed(1)} 對 ${def}，${qtxt(q)}）`);
+    say(`${nm}翼側擊${w.cut?'（陣線斷絕）':''}：${o==='挫'?nm+'翼受挫':'紅軍'+nm+'側'+{潰:'被擊潰',退:'動搖',損:'受損'}[o]}（側擊戰力 ${att.toFixed(1)} 對 ${def}，${qtxt(q,'藍軍','紅軍')}）`);
     if(o==='潰')R.broken[k]=true;else if(o==='退'){R.shake[k]++;loseRed(k);if(R.shake[k]>=2)R.broken[k]=true;}else if(o==='損'){loseRed(k);w.n--;}else w.n--;}
   // 某一區連預備隊在內都打光了，而且攻方在那裡還有兵，才算被擊潰
   if(R.F.C+inC()<=0&&!R.broken.C&&B.contact&&B.M>0){R.broken.C=true;say('紅軍中區兵力耗盡');}
