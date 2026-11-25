@@ -240,6 +240,8 @@ window.W={
   get theme(){return themeKey;},
   setFacing(th){HOME.th=th;cam.th=goal.th=th;},
   home(){goal={...HOME,r:homeR()};},
+  // 戰線前後移動時，鏡頭的中心跟著移（保留使用者自己轉的角度與縮放）
+  setCenter(tz){const d=tz-HOME.tz;if(Math.abs(d)<.01)return;HOME.tz=tz;goal.tz+=d;},
   focus(x,z,r,th,ph){goal={th:th??goal.th,ph:ph??goal.ph,r:r||30,tx:x,tz:z};},
   resize,
   // desc.groups: {id:{x,z,ry,alive,dead,rout,hidden,flag:{t,c,h},tag:{t,c}}}

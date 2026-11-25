@@ -47,52 +47,52 @@ async function makeBackend(){
 const parse=v=>v==null?null:typeof v==='string'?JSON.parse(v):v;
 
 /* ====================== 局面 → 部隊位置 ====================== */
-const {QU,FL,CP0,CP1,WB0,WB1,WF,WCUT,WSLOT,RESP,RN,bluePos,timeline,awlSlots,AWL_Z0}=GL;
+const {QU,FL,CP0,CP1,WB0,WB1,WF,WCUT,WSLOT,RESP,RN,bluePos,timeline,awlSlots,AWL_Z0,offs}=GL;
 const secName=(k,view)=>view==='red'?{L:'右',C:'中',R:'左'}[k]:{L:'左',C:'中',R:'右'}[k];
 // view：truth（老師、結束後）、blue、red、proj（投影：雙方都不洩漏）
-function sceneDesc(e,view){const s=e.s,ro=e.ro;if(s.over)view='truth';const g={};
+function sceneDesc(e,view){const s=e.s,ro=e.ro;if(s.over)view='truth';const g={};const {rz,hs}=offs(ro);
   const seenNow=s.seenDAt===s.r&&s.r>0;
   const hideD=(view==='red'||view==='proj')&&!seenNow;
   const pos=bluePos(s,ro,hideD);
   for(const nm of QU){const d={x:0,z:0,flag:{t:nm,c:FL[nm]}};
     if(ro.dead[nm]){Object.assign(d,{x:ro.dead[nm].x,z:ro.dead[nm].z,dead:true,flag:null});}
-    else if(ro.D.includes(nm)&&hideD){const w=s.B.W.L.pos;if(w==='back'){const [k,i]=WSLOT[nm];const t=(s.B.contact?WB1:WB0)[i];d.x=(k==='L'?-1:1)*t[0];d.z=t[1];}else{const p=pos[nm];d.x=p[0];d.z=p[1];d.hidden=true;}}
+    else if(ro.D.includes(nm)&&hideD){const w=s.B.W.L.pos;if(w==='back'){const [k,i]=WSLOT[nm];const t=(s.B.contact?WB1:WB0)[i];d.x=(k==='L'?-1:1)*t[0];d.z=t[1]+(s.B.contact?rz:hs);}else{const p=pos[nm];d.x=p[0];d.z=p[1];d.hidden=true;}}
     else{const p=pos[nm];d.x=p[0];d.z=p[1];}
     g[nm]=d;}
   const lead=ro.C[0];if(lead&&s.B.shake>0&&s.B.M>0)g[lead].tag={t:'中部動搖',c:'rgba(200,110,20,.95)'};
   for(const k of['L','R']){const w=s.B.W[k];if(w.cut&&ro[k][0])g[ro[k][0]].tag={t:'陣線斷絕',c:'rgba(200,110,20,.95)'};}
   if(seenNow&&ro.D[0]&&(view==='red'||view==='truth'))g[ro.D[0]].tag={t:`紅軍試探：後陣 ${s.B.D} 曲`,c:'rgba(160,30,20,.92)'};
-  g['將']={x:-4.6,z:s.B.contact?-2:15,ry:Math.PI,flag:{t:'將',c:'gen',h:6.5}};
-  g['紅將']={x:9.4,z:-33.8,ry:0,flag:{t:'將',c:'red',h:6.5}};
-  for(const k of['L','C','R']){const F=s.R.F[k],br=s.R.broken[k];const d={x:{L:-7.2,C:0,R:7.2}[k],z:-25,ry:Math.PI,alive:Math.max(0,Math.round(F*16)),flag:{t:secName(k,view),c:'red',h:4.6}};
+  g['將']={x:-4.6,z:s.B.contact?-2+rz:15+hs,ry:Math.PI,flag:{t:'將',c:'gen',h:6.5}};
+  g['紅將']={x:9.4,z:-33.8+rz,ry:0,flag:{t:'將',c:'red',h:6.5}};
+  for(const k of['L','C','R']){const F=s.R.F[k],br=s.R.broken[k];const d={x:{L:-7.2,C:0,R:7.2}[k],z:-25+rz,ry:Math.PI,alive:Math.max(0,Math.round(F*16)),flag:{t:secName(k,view),c:'red',h:4.6}};
     if(br){d.rout=true;d.tag={t:'潰',c:'rgba(170,20,20,.95)'};}else if(s.R.shake[k]>0)d.tag={t:'動搖',c:'rgba(200,110,20,.95)'};g['F'+k]=d;}
   const resLoc=(view==='blue'||view==='proj')?s.resHist[Math.max(0,s.resHist.length-2)]:s.R.res;
   const rp=RESP[resLoc];const ra=Math.max(0,Math.round(s.R.resN*8));
-  g.resA={x:rp[0][0],z:rp[0][1],ry:Math.PI,alive:ra,dead:s.R.resN<=0,flag:{t:'預',c:'res',h:3.8}};
-  g.resB={x:rp[1][0],z:rp[1][1],ry:Math.PI,alive:ra,dead:s.R.resN<=0,flag:{t:'預',c:'res',h:3.8}};
+  g.resA={x:rp[0][0],z:rp[0][1]+rz,ry:Math.PI,alive:ra,dead:s.R.resN<=0,flag:{t:'預',c:'res',h:3.8}};
+  g.resB={x:rp[1][0],z:rp[1][1]+rz,ry:Math.PI,alive:ra,dead:s.R.resN<=0,flag:{t:'預',c:'res',h:3.8}};
   if((view==='blue'||view==='proj')&&s.r>0)g.resA.tag={t:'斥候回報（上回合位置）',c:'rgba(30,60,120,.92)'};
   return{groups:g};}
 // 草擬中的命令畫成地上的箭頭
-function orderArrows(e,side,o){const s=e.s,ro=e.ro,A=[];if(!o)return A;
+function orderArrows(e,side,o){const s=e.s,ro=e.ro,A=[];if(!o)return A;const {rz,hs}=offs(ro);
   if(side==='blue'){const ct=s.B.contact;
-    if(o.c&&o.c!=='待'&&!ct)A.push({from:[0,-1],to:[0,-13],color:o.c==='攻'?0xff6040:0xffd24a});
-    if(o.c==='攻'&&ct)A.push({from:[0,-11],to:[0,-20],color:0xff6040});
-    if(o.c==='待'&&ct)A.push({from:[0,-12],to:[0,-1],color:0xd8d8d8});
+    if(o.c&&o.c!=='待'&&!ct)A.push({from:[0,hs-1],to:[0,-13+rz],color:o.c==='攻'?0xff6040:0xffd24a});
+    if(o.c==='攻'&&ct)A.push({from:[0,-11+rz],to:[0,-20+rz],color:0xff6040});
+    if(o.c==='待'&&ct)A.push({from:[0,-12+rz],to:[0,hs-1],color:0xd8d8d8});
     const pos=bluePos(s,ro);
     for(const k of['L','R']){const sg=k==='L'?-1:1,nm=ro[k][0];if(!nm||s.B.W[k].n<=0)continue;const p=pos[nm];
-      if(o.w==='斜')A.push({from:p,to:[sg*WF[1][0],WF[1][1]],color:0xffd24a});
-      if(o.w==='急')A.push({from:p,to:[sg*WCUT[1][0],WCUT[1][1]],color:0xff9a3a});
-      if(o.w==='收')A.push({from:[sg*25,-21],to:[sg*11.4,-25],color:0xffb030});
-      if(o.w==='集'){const sl=awlSlots(4+ro.D.length+2,ct);const t=sl[Math.min(sl.length-1,ro.C.length+ro.D.length+(k==='L'?0:1))];A.push({from:p,to:[t[0],t[1]],color:0x6fe0ff});}}}
-  else{if(o.f==='壓')A.push({from:[0,-21],to:[0,-12],color:0xff6040});
-    if(o.f==='探')A.push({from:[3,-21],to:[3,12],color:0xe8e8e8,w:.5});
-    const to=o.res?moveRes(s.R.res,o.res):s.R.res;if(to!==s.R.res){const a=RESP[s.R.res],b=RESP[to];A.push({from:a[0],to:b[0],color:0xffb040});A.push({from:a[1],to:b[1],color:0xffb040});}}
+      if(o.w==='斜')A.push({from:p,to:[sg*WF[1][0],WF[1][1]+rz],color:0xffd24a});
+      if(o.w==='急')A.push({from:p,to:[sg*WCUT[1][0],WCUT[1][1]+rz],color:0xff9a3a});
+      if(o.w==='收')A.push({from:[sg*25,-21+rz],to:[sg*11.4,-25+rz],color:0xffb030});
+      if(o.w==='集'){const sl=awlSlots(4+ro.D.length+2,ct);const t=sl[Math.min(sl.length-1,ro.C.length+ro.D.length+(k==='L'?0:1))];A.push({from:p,to:[t[0],t[1]+(ct?rz:hs)],color:0x6fe0ff});}}}
+  else{if(o.f==='壓')A.push({from:[0,-21+rz],to:[0,s.B.contact?-12+rz:hs-3.5],color:0xff6040});
+    if(o.f==='探')A.push({from:[3,-21+rz],to:[3,12+hs],color:0xe8e8e8,w:.5});
+    const to=o.res?moveRes(s.R.res,o.res):s.R.res;if(to!==s.R.res){const a=RESP[s.R.res],b=RESP[to];A.push({from:[a[0][0],a[0][1]+rz],to:[b[0][0],b[0][1]+rz],color:0xffb040});A.push({from:[a[1][0],a[1][1]+rz],to:[b[1][0],b[1][1]+rz],color:0xffb040});}}
   return A;}
 function moveRes(from,to){if(from===to)return to;if(from==='rear')return to;return 'rear';}
-function fxOf(prev,next){const h=next.s.hist[next.s.hist.length-1],L=next.s.log[next.s.log.length-1]||[];const fx=[];
-  if(h.bo.c==='攻'||h.ro.f==='壓')fx.push({x:0,z:-19});
-  if(h.bo.w==='收'||h.bo.w==='急')for(const k of['L','R'])if(prev.s.B.W[k].n>0)fx.push({x:(k==='L'?-1:1)*11.4,z:-25});
-  if(L.some(t=>t.includes('截擊')))fx.push({x:-15.5,z:-32},{x:15.5,z:-32});
+function fxOf(prev,next){const h=next.s.hist[next.s.hist.length-1],L=next.s.log[next.s.log.length-1]||[];const fx=[];const {rz}=offs(next.ro);
+  if(h.bo.c==='攻'||h.ro.f==='壓')fx.push({x:0,z:-19+rz});
+  if(h.bo.w==='收'||h.bo.w==='急')for(const k of['L','R'])if(prev.s.B.W[k].n>0)fx.push({x:(k==='L'?-1:1)*11.4,z:-25+rz});
+  if(L.some(t=>t.includes('截擊')))fx.push({x:-15.5,z:-32+rz},{x:15.5,z:-32+rz});
   return fx;}
 
 /* ====================== 文字 ====================== */
@@ -241,7 +241,8 @@ let finaleEnd=0,finaleKey=null,finaleT=[];
 const FINALE_MS=7600;
 function finaleRunning(){return Date.now()<finaleEnd;}
 function stopFinale(){finaleT.forEach(clearTimeout);finaleT=[];finaleEnd=0;finaleKey=null;}
-function finaleSteps(fin){const s=fin.s,ro=fin.ro,why=s.over.why,win=s.over.win;const base=sceneDesc(fin,'truth').groups;for(const k of Object.keys(base))if(!k.startsWith('F'))delete base[k].tag;
+function finaleSteps(fin){const steps=finaleSteps0(fin);const {rz}=offs(fin.ro);steps.forEach(st=>{st.fx.forEach(f=>f.z+=rz);if(st.focus)st.focus[1]+=rz;});return steps;}
+function finaleSteps0(fin){const {rz}=offs(fin.ro);const s=fin.s,ro=fin.ro,why=s.over.why,win=s.over.win;const base=sceneDesc(fin,'truth').groups;for(const k of Object.keys(base))if(!k.startsWith('F'))delete base[k].tag;
   const G=()=>JSON.parse(JSON.stringify(base));const live=[...ro.C,...ro.D,...ro.L,...ro.R];const steps=[];
   const routRed=(g,ks)=>ks.forEach(k=>{g['F'+k].rout=true;g['F'+k].tag={t:'潰',c:'rgba(170,20,20,.95)'};});
   const routRes=g=>{for(const q of['resA','resB']){g[q].rout=true;}};
@@ -250,12 +251,12 @@ function finaleSteps(fin){const s=fin.s,ro=fin.ro,why=s.over.why,win=s.over.win;
   if(win==='和'){const g=G();routRed(g,['C','L','R']);for(const nm of ro.C)g[nm]&&(g[nm].rout=true);steps.push({g,fx:[{x:0,z:-22},{x:-11,z:-25},{x:11,z:-25}],focus:[0,-22,60],cap:'雙方同時崩潰'});return steps;}
   if(why.includes('突穿')){
     const sl=awlSlots(ro.C.length+ro.D.length,true);const order=['戊','丁','壬','己'].filter(nm=>ro.C.includes(nm)).concat(ro.D);
-    const g1=G();order.forEach((nm,i)=>{g1[nm].x=sl[i][0];g1[nm].z=sl[i][1]-10;g1[nm].dur=2000;});routRed(g1,['C']);
+    const g1=G();order.forEach((nm,i)=>{g1[nm].x=sl[i][0];g1[nm].z=sl[i][1]-10+rz;g1[nm].dur=2000;});routRed(g1,['C']);
     steps.push({g:g1,fx:[{x:0,z:-24},{x:-2,z:-27},{x:2,z:-22}],focus:[0,-24,60],cap:'錐行衝進紅軍中區'});
     const g2=JSON.parse(JSON.stringify(g1));order.forEach(nm=>{g2[nm].z-=14;g2[nm].dur=2400;});routRed(g2,['L','R']);routRes(g2);redGenFlee(g2);
     steps.push({g:g2,fx:[{x:-7,z:-30},{x:7,z:-30},{x:0,z:-36}],cap:'中區被突穿，方陣從中間裂開'});return steps;}
   if(why.includes('合圍')){
-    const g1=G();for(const k of['L','R']){const sg=k==='L'?-1:1;ro[k].forEach((nm,i)=>{g1[nm].x=sg*(12.2+i*0.6);g1[nm].z=-30+i*5;g1[nm].dur=2000;});}routRed(g1,['L','R']);
+    const g1=G();for(const k of['L','R']){const sg=k==='L'?-1:1;ro[k].forEach((nm,i)=>{g1[nm].x=sg*(12.2+i*0.6);g1[nm].z=-30+i*5+rz;g1[nm].dur=2000;});}routRed(g1,['L','R']);
     steps.push({g:g1,fx:[{x:-10.5,z:-27},{x:10.5,z:-27},{x:-10.5,z:-22},{x:10.5,z:-22}],focus:[0,-25,58],cap:'兩翼從側面收攏'});
     const g2=JSON.parse(JSON.stringify(g1));for(const nm of[...ro.C,...ro.D]){g2[nm].z-=5;g2[nm].dur=2000;}for(const k of['L','R']){const sg=k==='L'?-1:1;ro[k].forEach(nm=>{g2[nm].x=sg*9.6;g2[nm].dur=2000;});}
     routRed(g2,['C']);routRes(g2);redGenFlee(g2);steps.push({g:g2,fx:[{x:0,z:-25},{x:0,z:-30}],cap:'三面合圍，方陣被夾碎'});return steps;}
@@ -273,6 +274,7 @@ function playFinale(fin){stopFinale();finaleCap='';const steps=finaleSteps(fin);
 // 決戰的字幕寫在側欄的「決戰中」卡片裡，不蓋戰場
 let finaleCap='';function toastStage(t){finaleCap=t;const d=document.getElementById('fcap');if(d)d.textContent=t;}
 function render3D(tl,view,arrows,animate,prevEntry){const e=tl[tl.length-1];
+  {const {rz,hs}=offs(e.ro);W.setCenter(((-35+rz)+(20+hs))/2-.5);}
   if(animate&&prevEntry){W.command('blue');W.command('red');}   // 結算：兩軍主將舉刀下令
   if(e.s.over&&animate&&prevEntry&&!prevEntry.s.over){const d=sceneDesc(e,'truth');d.arrows=[];d.fx=fxOf(prevEntry,e);lastDesc=d;W.show(d,true);playFinale(e);return;}
   if(e.s.over&&finaleKey===e.s.hist.length+':'+e.s.over.why)return;   // 動畫播過了：保留決戰後的畫面
@@ -303,15 +305,16 @@ function optSvg(e,sd,g,k){const s=e.s,d=sceneDesc(e,sd).groups;let h='';
   for(const q of['L','C','R']){const u=d['F'+q];rect(u.x,u.z,7,9.4,u.rout?'#6a3a30':'#c8452f',u.alive>0?1:.4);}
   for(const q of['resA','resB']){const u=d[q];rect(u.x,u.z,4.6,9.4,'#9a3a24',u.dead?.4:.9);}
   const o={[g]:k};let A=orderArrows(e,sd,o);const lab=(x,z,t)=>h+=`<text x="${x}" y="${z}" class="sl" ${sd==='red'?`transform="rotate(180 ${x} ${z})"`:''}>${t}</text>`;
-  if(g==='c'&&k==='纏'&&s.B.contact)h+=`<path d="M-6 -19.5 L-3 -17.5 L0 -19.5 L3 -17.5 L6 -19.5" stroke="#ffd24a" stroke-width="1.3" fill="none"/>`;
-  if(g==='c'&&k==='待'&&!s.B.contact)lab(0,24,'原地');
-  if(g==='w'&&k==='梯')lab(0,24,s.B.W.L.cut?'補位':'原地');
-  if(g==='f'&&k==='頂')h+=`<rect x="-7" y="-19.6" width="14" height="1.6" fill="#ffd24a"/>`;
-  if(g==='res'&&moveRes(s.R.res,k)===s.R.res)lab(0,-44,'不動');
+  const {rz,hs}=offs(e.ro);const Z=z=>(z).toFixed(1);
+  if(g==='c'&&k==='纏'&&s.B.contact)h+=`<path d="M-6 ${Z(-19.5+rz)} L-3 ${Z(-17.5+rz)} L0 ${Z(-19.5+rz)} L3 ${Z(-17.5+rz)} L6 ${Z(-19.5+rz)}" stroke="#ffd24a" stroke-width="1.3" fill="none"/>`;
+  if(g==='c'&&k==='待'&&!s.B.contact)lab(0,24+hs,'原地');
+  if(g==='w'&&k==='梯')lab(0,24+hs,s.B.W.L.cut?'補位':'原地');
+  if(g==='f'&&k==='頂')h+=`<rect x="-11" y="${Z(-19.6+rz)}" width="22" height="1.6" fill="#ffd24a"/>`;
+  if(g==='res'&&moveRes(s.R.res,k)===s.R.res)lab(0,-44+rz,'不動');
   for(const a of A){const [x0,z0]=a.from,[x1,z1]=a.to,L=Math.hypot(x1-x0,z1-z0);if(L<1)continue;const ux=(x1-x0)/L,uz=(z1-z0)/L,c=hexc(a.color);
     const bx=x1-ux*4.6,bz=z1-uz*4.6;h+=`<line x1="${x0.toFixed(1)}" y1="${z0.toFixed(1)}" x2="${bx.toFixed(1)}" y2="${bz.toFixed(1)}" stroke="${c}" stroke-width="2.4" ${a.w?'stroke-dasharray="2 1.5"':''}/>`;
     h+=`<polygon points="${x1.toFixed(1)},${z1.toFixed(1)} ${(bx-uz*3.2).toFixed(1)},${(bz+ux*3.2).toFixed(1)} ${(bx+uz*3.2).toFixed(1)},${(bz-ux*3.2).toFixed(1)}" fill="${c}"/>`;}
-  return `<svg class="osv" viewBox="-31 -46 62 72" aria-hidden="true"><rect x="-31" y="-46" width="62" height="72" fill="#1a130d"/><g ${sd==='red'?'transform="rotate(180 0 -9)"':''}>${h}</g></svg>`;}
+  const y0=((-46+rz)+(26+hs-72))/2;return `<svg class="osv" viewBox="-31 ${Z(y0)} 62 72" aria-hidden="true"><rect x="-31" y="${Z(y0)}" width="62" height="72" fill="#1a130d"/><g ${sd==='red'?`transform="rotate(180 0 ${Z(y0+36)})"`:''}>${h}</g></svg>`;}
 function sendBtn(ready,sent,canOrder){if(!canOrder)return '<p class="note">同隊已有指揮官在下令，你在觀看。</p>';
   if(sent)return '<button type="button" class="send ok" id="bSend" disabled>✓ 命令已送出・等待結算</button><p class="mini">結算之前，點別的選項可以改命令，改完要再送出一次。</p>';
   return `<button type="button" class="send" id="bSend" ${ready?'':'disabled'}>${ready?'送出命令':'兩個命令都選好才能送出'}</button>`;}

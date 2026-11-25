@@ -13,7 +13,13 @@ const RN={rear:'後方居中',center:'中央後方',flanks:'兩側後方'};
 // 錐行：後曲集中之後，中部排成「前尖、身窄、縱深厚」的錐子（一、二、二、二……排）
 const AWL_Z0=ct=>ct?-15.2:0;
 function awlSlots(n,ct){const out=[],z0=AWL_Z0(ct);let r=0,left=n;while(left>0){const k=r===0?1:Math.min(2,left);for(let j=0;j<k;j++)out.push([k===1?0:(j?2.9:-2.9),z0+r*5.6]);left-=k;r++;}return out;}
-function bluePos(s,ro,origSlots){const Pp={};const ct=s.B.contact;const CP=ct?CP1:CP0;
+// 接敵的位置：紅軍前壓時，紅軍整條戰線往藍軍那邊推進 rz；藍軍本陣跟著往後讓出距離 hs，兩軍不會疊在一起
+const offs=ro=>{const rz=ro.rz||0;return{rz,hs:Math.max(0,rz-9.2)};};
+function bluePos(s,ro,origSlots){const P0=bluePos0(s,ro,origSlots);const {rz,hs}=offs(ro);const ct=s.B.contact;
+  for(const nm of Object.keys(P0)){const inWing=ro.L.includes(nm)||ro.R.includes(nm);const flank=inWing&&s.B.W[ro.L.includes(nm)?'L':'R'].pos==='flank';
+    P0[nm]=[P0[nm][0],P0[nm][1]+(flank||ct?rz:hs)];}
+  return P0;}
+function bluePos0(s,ro,origSlots){const Pp={};const ct=s.B.contact;const CP=ct?CP1:CP0;
   const awl=!origSlots&&ro.D.length>0;
   if(awl){const order=['戊','丁','壬','己'].filter(nm=>ro.C.includes(nm)).concat(ro.D);const sl=awlSlots(order.length,ct);order.forEach((nm,i)=>Pp[nm]=sl[i]);}
   else{for(const nm of ro.C)Pp[nm]=CP[nm];
@@ -24,8 +30,11 @@ function bluePos(s,ro,origSlots){const Pp={};const ct=s.B.contact;const CP=ct?CP
     ro[k].forEach((nm,i)=>{const t=tbl[origSlots&&w.pos!=='flank'?WSLOT[nm][1]:i];Pp[nm]=[sg*t[0],t[1]];});}
   return Pp;}
 // 由命令紀錄重播出每一回合的局面，並追蹤每個曲在哪裡、何時陣亡
-function timeline(hist){let s=GR.init();let ro={C:['戊','己','丁','壬'],D:[],L:['丙','乙','甲'],R:['癸','庚','辛'],dead:{}};const out=[{s,ro:clone(ro)}];
+function timeline(hist){let s=GR.init();let ro={C:['戊','己','丁','壬'],D:[],L:['丙','乙','甲'],R:['癸','庚','辛'],dead:{},rz:0};const out=[{s,ro:clone(ro)}];
   for(const h of hist){const n=GR.step(s,h.bo,h.ro);ro=clone(ro);const bo=n.hist[n.hist.length-1].bo;
+    // 新接敵：藍軍上前→在紅軍原來的戰線交戰；紅軍前壓→紅軍推進到藍軍本陣；雙方同時→在中間相遇
+    if(!s.B.contact&&n.B.contact){const {rz,hs}=offs(ro);const target=Math.min(30,hs+17.6);const red=h.ro.f==='壓',blue=h.bo.c!=='待';
+      if(red&&blue)ro.rz=rz+(target-rz)/2;else if(red)ro.rz=target;}
     if(bo.w==='集')for(const k of['L','R'])if(ro[k].length)ro.D.push(ro[k].shift());
     const pos=bluePos(n,ro);const kill=(nm,rout)=>{ro.dead[nm]={x:pos[nm][0],z:pos[nm][1],rout:!!rout};};
     for(const k of['L','R'])while(ro[k].length>n.B.W[k].n)kill(ro[k].pop());
@@ -33,6 +42,6 @@ function timeline(hist){let s=GR.init();let ro={C:['戊','己','丁','壬'],D:[]
     while(ro.C.length>n.B.M)kill(ro.C.pop(),n.B.M<=0);
     s=n;out.push({s,ro});}
   return out;}
-const API={QU,FL,CP0,CP1,WB0,WB1,WF,WCUT,WSLOT,RESP,RN,bluePos,timeline,awlSlots,AWL_Z0};
+const API={offs,QU,FL,CP0,CP1,WB0,WB1,WF,WCUT,WSLOT,RESP,RN,bluePos,timeline,awlSlots,AWL_Z0};
 if(typeof module!=='undefined'&&module.exports)module.exports=API;else root.GL=API;
 })(typeof window!=='undefined'?window:globalThis);

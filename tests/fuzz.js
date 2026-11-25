@@ -13,6 +13,8 @@ const res=await p.evaluate(async N=>{const T=window.__T,bad=[];let states=0,stri
           for(const [id,u] of Object.entries(d.groups)){if(!isFinite(u.x)||!isFinite(u.z))bad.push(`位置不是數字 ${id} ${v}`);if(u.alive!=null&&(!isFinite(u.alive)||u.alive<0))bad.push(`人數不對 ${id}`);}
           // 兩個活著、看得見的曲不應站在同一點
           const seen={};for(const nm of '甲乙丙丁戊己庚辛壬癸'){const u=d.groups[nm];if(u.hidden||u.dead)continue;const key=u.x.toFixed(1)+','+u.z.toFixed(1);if(seen[key])bad.push(`兩個曲重疊 ${seen[key]}${nm} 視角${v} 第${k}回合 ${JSON.stringify(hist.slice(0,k))}`);seen[key]=nm;}
+          // 藍軍的曲不能壓在紅軍方陣上
+          {const rz=GL.offs(e.ro).rz;for(const nm of '甲乙丙丁戊己庚辛壬癸'){const u=d.groups[nm];if(u.hidden||u.dead)continue;if(Math.abs(u.x)<13.4&&u.z>-31.8+rz&&u.z<-18.2+rz)bad.push(`藍軍 ${nm} 壓在紅軍方陣上 視角${v} ${JSON.stringify(hist.slice(0,k))}`);}}
           if(v!=='truth'){chk(T.sitCard(e,v),'態勢 '+v);if(k>0){chk(T.reportCard(st,k-1,v),'戰報 '+v);chk(T.fullLog(st,v),'歷次戰報 '+v);}}
           if(k===0)W.show(d,false);}
         if(k>0){T.fxOf(tl[tl.length-2],e);chk(T.reportCard(st,k-1,'truth'),'戰報 老師');}
@@ -24,7 +26,7 @@ const res=await p.evaluate(async N=>{const T=window.__T,bad=[];let states=0,stri
           // 紅軍視角：沒被看見時，集中到後方的曲不能出現在中部後方
           const dr=T.sceneDesc(e,'red');const seenNow=st.seenDAt===st.r&&st.r>0;if(!seenNow)for(const nm of e.ro.D){const u=dr.groups[nm];if(!u.dead&&!u.hidden&&Math.abs(u.x)<6)bad.push('紅軍看得到藍軍後陣的曲 '+nm);}
           // 藍軍視角：預備隊畫在上一回合的位置
-          const db=T.sceneDesc(e,'blue');const want=GL.RESP[st.resHist[Math.max(0,st.resHist.length-2)]];if(db.groups.resA.x!==want[0][0]||db.groups.resA.z!==want[0][1])bad.push('藍軍看到的預備隊位置不是上一回合的');}
+          const db=T.sceneDesc(e,'blue');const want=GL.RESP[st.resHist[Math.max(0,st.resHist.length-2)]];if(db.groups.resA.x!==want[0][0]||Math.abs(db.groups.resA.z-(want[0][1]+GL.offs(e.ro).rz))>1e-9)bad.push('藍軍看到的預備隊位置不是上一回合的');}
         else{for(const v of['truth','blue','red'])chk(T.endCard(tl,v),'結束 '+v);chk(T.revealHtml(e),'揭曉頁');
           const d=T.sceneDesc(e,'red');W.show(d,true);}
       }}catch(err){bad.push('丟出錯誤：'+err.message+' @ '+JSON.stringify(hist)+' '+(err.stack||'').split('\n')[1]);}

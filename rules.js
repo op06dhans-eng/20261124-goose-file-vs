@@ -46,7 +46,7 @@ function step(s0,bo,ro){const s=clone(s0);
     else if(bo.w==='梯'&&w.cut){w.cut=false;say(`${k==='L'?'左':'右'}翼停下補位，陣線重新連上`);}}
   // 3. 中區
   const arriving=(bo.c!=='待')&&!B.contact;
-  if(bo.c==='待'){if(B.contact)say('中部退回本陣');B.contact=false;}else B.contact=true;
+  if(bo.c==='待'){if(B.contact)say('藍軍中部退回本陣');B.contact=false;}else{if(!B.contact)say('藍軍中部上前接敵');B.contact=true;}
   const exposed=wingPos(s)==='flank';   // 兩翼已離開：中部兩側沒有梯次掩護
   const bDef=(B.M+B.D)*(bo.c==='纏'&&!arriving?P.guard:1)*(exposed?P.exposed:1);
   const bAtt=(B.M+B.D)*(B.D>=2?1:P.thin)*(arriving?P.arrive:1);

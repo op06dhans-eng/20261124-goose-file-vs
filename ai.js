@@ -62,6 +62,12 @@ function replayR(roOrders,bf){let s=R.init();for(const ro of roOrders){const bo=
 function blueCanWin(s,rf,depth){if(s.over)return s.over.win==='藍';const ro=rf(s);for(const bo of R.blueLegal(s)){if(blueCanWin(R.step(s,bo,ro),rf))return true;}return false;}
 function redCanWin(s,bf){if(s.over)return s.over.win==='紅';const bo=bf(s);for(const ro of R.redLegal(s)){if(redCanWin(R.step(s,bo,ro),bf))return true;}return false;}
 const RO_ALL=R.redLegal(R.init());
+// 同分的命令裡，依「說得通」的程度加權抽選：已經接敵就不無故退回本陣再衝上去（以前純隨機，看起來莫名其妙）；
+// 仍保留隨機，對手才不會一眼看穿
+function wpick(cands,wt){const ws=cands.map(wt),T=ws.reduce((a,b)=>a+b,0);let r=Math.random()*T;for(let i=0;i<cands.length;i++){r-=ws[i];if(r<=0)return cands[i];}return cands[cands.length-1];}
+function pickB(s,cands){const ct=s.B.contact;const nonWait=cands.some(o=>o.c!=='待');
+  return wpick(cands,o=>o.c==='待'?(ct&&nonWait?0:(nonWait?.6:1)):1);}
+function pickR(s,cands){return wpick(cands,()=>1);}
 function informedB(s){const myOrders=s.hist.map(h=>h.bo);const seenRes=s.resHist.slice(0,Math.max(1,s.resHist.length-1));const seenF=s.hist.map(h=>h.ro.f);
   let cons=RD.filter(([,rf])=>{const t=replay(myOrders,rf);if(t.hist.length!==s.hist.length)return false;
     for(let i=0;i<t.hist.length;i++)if(t.hist[i].ro.f!==seenF[i])return false;
@@ -69,7 +75,7 @@ function informedB(s){const myOrders=s.hist.map(h=>h.bo);const seenRes=s.resHist
   if(!cons.length)cons=RD;
   let best=-1,cands=[];for(const bo of R.blueLegal(s)){let sc=0;for(const [,rf] of cons){const t=replay(myOrders,rf);const ro=rf(t);const n=R.step(t,bo,ro);if(blueCanWin(n,rf))sc++;}
     if(sc>best){best=sc;cands=[bo];}else if(sc===best)cands.push(bo);}
-  return cands[Math.random()*cands.length|0];}
+  return pickB(s,cands);}
 function informedR(s){const myOrders=s.hist.map(h=>h.ro);
   const vis=s.hist.map(h=>h.bo.c);const posHist=[];// 紅方看得到：藍軍中部動作、兩翼位置；看不到「集」
   let cons=BD.filter(([,bf])=>{const t=replayR(myOrders,bf);if(t.hist.length!==s.hist.length)return false;
@@ -78,7 +84,7 @@ function informedR(s){const myOrders=s.hist.map(h=>h.ro);
   if(!cons.length)cons=BD;
   let best=-1,cands=[];for(const ro of RO_ALL){let sc=0;for(const [,bf] of cons){const t=replayR(myOrders,bf);const bo=bf(t);const n=R.step(t,bo,ro);if(redCanWin(n,bf))sc++;}
     if(sc>best){best=sc;cands=[ro];}else if(sc===best)cands.push(ro);}
-  return cands[Math.random()*cands.length|0];}
+  return pickR(s,cands);}
 
 const API={BLUE,RED,randB,randR,informedB,informedR};
 if(typeof module!=='undefined'&&module.exports)module.exports=API;else root.GAI=API;
