@@ -21,7 +21,8 @@ for(const side of['blue','red'])for(const [vn,vp] of Object.entries(VP)){const c
         // 每個選項都要有示意圖
         const n=await p.$$eval(`.o[data-g="${k}"]`,els=>els.filter(e=>!e.querySelector('svg.osv')).length);if(n)fail('有選項沒有示意圖 '+k);}
       const on=await p.$$eval('.o.on',e=>e.length);if(on!==2)fail('選中的選項不是兩個：'+on);
-      await p.click('#bSend');await p.waitForTimeout(2300);await H.layout(p,`對電腦 ${side} ${vn} 第${r+1}回合`,errs);r++;
+      await p.click('#bSend');await p.waitForTimeout(2300);
+      if((await p.innerText('#side')).includes('決戰中')){if(await p.$('#bReveal'))fail('動畫中就出現結果');await p.waitForSelector('#bReveal',{timeout:30000}).catch(()=>fail('動畫後沒有結果'));}await H.layout(p,`對電腦 ${side} ${vn} 第${r+1}回合`,errs);r++;
       if(!(await p.$('#bReveal'))){const t=await p.innerText('#side');if(!t.includes('回合戰報'))fail('結算後沒有戰報');if(!t.includes('電腦（'))fail('沒有顯示電腦這回合看得到的動作');}}
     if(!(await p.$('#bReveal'))){fail('對電腦打了六回合還沒結束');break;}
     const res=await p.innerText('.res');wins[res.slice(0,3)]=(wins[res.slice(0,3)]||0)+1;games++;

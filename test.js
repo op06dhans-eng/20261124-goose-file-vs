@@ -9,6 +9,7 @@ for(let g=0;g<N;g++){let s=R.init();const hist=[];
   if(new Set([...alive,...dead]).size!==10)bad.push(['曲重複',g]);
   if(ro.C.length!==B.M||ro.D.length!==B.D||ro.L.length!==B.W.L.n||ro.R.length!==B.W.R.n)bad.push(['名冊與兵力不符',g,JSON.stringify(ro),JSON.stringify(B)]);
   if(JSON.stringify(e.s)!==JSON.stringify(s))bad.push(['重播結果不同',g]);
+  if(s.log.flat().some(t=>/Infinity|NaN|undefined/.test(t)))bad.push(['戰報有異常字樣',g,JSON.stringify(s.log)]);
   try{V.review(hist);}catch(err){bad.push(['檢討出錯',g,err.message]);}
   if(bad.length>5)break;}
 console.log(`隨機對局 ${N} 局、${n} 個回合；問題 ${bad.length} 件`);bad.slice(0,5).forEach(b=>console.log(JSON.stringify(b).slice(0,400)));

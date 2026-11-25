@@ -47,7 +47,7 @@ async function makeBackend(){
 const parse=v=>v==null?null:typeof v==='string'?JSON.parse(v):v;
 
 /* ====================== 局面 → 部隊位置 ====================== */
-const {QU,FL,CP0,CP1,WB0,WB1,WF,WCUT,WSLOT,RESP,RN,bluePos,timeline}=GL;
+const {QU,FL,CP0,CP1,WB0,WB1,WF,WCUT,WSLOT,RESP,RN,bluePos,timeline,awlSlots,AWL_Z0}=GL;
 const secName=(k,view)=>view==='red'?{L:'右',C:'中',R:'左'}[k]:{L:'左',C:'中',R:'右'}[k];
 // view：truth（老師、結束後）、blue、red、proj（投影：雙方都不洩漏）
 function sceneDesc(e,view){const s=e.s,ro=e.ro;if(s.over)view='truth';const g={};
@@ -83,7 +83,7 @@ function orderArrows(e,side,o){const s=e.s,ro=e.ro,A=[];if(!o)return A;
       if(o.w==='斜')A.push({from:p,to:[sg*WF[1][0],WF[1][1]],color:0xffd24a});
       if(o.w==='急')A.push({from:p,to:[sg*WCUT[1][0],WCUT[1][1]],color:0xff9a3a});
       if(o.w==='收')A.push({from:[sg*21,-21],to:[sg*7.5,-25],color:0xffb030});
-      if(o.w==='集')A.push({from:p,to:[sg*2.9,(ct?CP1:CP0)['己'][1]+5.8],color:0x6fe0ff});}}
+      if(o.w==='集'){const sl=awlSlots(4+ro.D.length+2,ct);const t=sl[Math.min(sl.length-1,ro.C.length+ro.D.length+(k==='L'?0:1))];A.push({from:p,to:[t[0],t[1]],color:0x6fe0ff});}}}
   else{if(o.f==='壓')A.push({from:[0,-21],to:[0,-12],color:0xff6040});
     if(o.f==='探')A.push({from:[3,-21],to:[3,12],color:0xe8e8e8,w:.5});
     const to=o.res?moveRes(s.R.res,o.res):s.R.res;if(to!==s.R.res){const a=RESP[s.R.res],b=RESP[to];A.push({from:a[0],to:b[0],color:0xffb040});A.push({from:a[1],to:b[1],color:0xffb040});}}
@@ -101,10 +101,10 @@ const OPT={
      纏:['接戰牽制','中部上前和敵軍交戰，把敵軍拖住，但不求打穿。已經接敵之後，防守 ×1.25。'],
      攻:['猛攻',`中部全力進攻。中部後方集中的後曲不到 2 個時，攻擊力 ×${P.thin}（後陣不厚）。猛攻的那一回合，紅軍會看到你後陣有多厚。`]},
   w:{梯:['梯次在後','兩翼留在中部後方兩側，掩護中部。陣線斷絕時，用這個命令補位。'],
-     斜:['依序斜出','兩翼一曲接一曲斜出，回合結束時到達敵陣兩側。若紅軍預備隊正守在兩側，途中會被截擊：損 1，退回原位。'],
+     斜:['依序斜出','兩翼一曲接一曲斜出，回合結束時到達敵陣兩側：陣形開始變成鴈行（兩翼張開的牛角形）。若紅軍預備隊正守在兩側，途中會被截擊：損 1，退回原位。'],
      急:['急進包抄',`這一回合就衝到敵陣兩側並立刻側擊，但陣線斷絕，側擊戰力 ×${P.cut}，直到補位。`],
      收:['收攏側擊',`兩翼從側面向內打，側擊 ×${P.side}。中部同時接敵時（接戰牽制或猛攻），三面夾擊再 ×4/3。`],
-     集:['向中部集中','兩翼各抽一曲到中部後方：後陣厚度 +2，兩翼各 −1。紅軍看不到這個調動。']},
+     集:['向中部集中','兩翼各抽一曲補到中部後方：後陣厚度 +2，兩翼各 −1。陣形會變成錐行（又尖又厚，準備從中央突破）。紅軍看不到這個調動。']},
   f:{頂:['頂住',`中區防守 ×${P.hold}。`],
      壓:['前壓',`中區向前攻擊藍軍中部（向前移動 ×${P.arrive}）。預備隊在中央時一起壓上。`],
      探:['試探','派人摸清藍軍後陣：回合結束時，得知藍軍中部後方集中了幾個曲。']},
@@ -236,7 +236,46 @@ const side=role==='blue'||role==='red'?role:role==='ai'?((Q.get('side')||HR)==='
 document.body.classList.add('side-'+(side||role));
 if(side==='red')W.setFacing(Math.PI);
 let lastDesc=null;
-function render3D(tl,view,arrows,animate,prevEntry){const e=tl[tl.length-1];const d=sceneDesc(e,view);d.arrows=arrows||[];if(animate&&prevEntry)d.fx=fxOf(prevEntry,e);lastDesc=d;W.show(d,animate);}
+/* ---------- 勝負動畫：依勝負方式演出決戰，播完才顯示結果與檢討 ---------- */
+let finaleEnd=0,finaleKey=null,finaleT=[];
+const FINALE_MS=7600;
+function finaleRunning(){return Date.now()<finaleEnd;}
+function stopFinale(){finaleT.forEach(clearTimeout);finaleT=[];finaleEnd=0;finaleKey=null;}
+function finaleSteps(fin){const s=fin.s,ro=fin.ro,why=s.over.why,win=s.over.win;const base=sceneDesc(fin,'truth').groups;for(const k of Object.keys(base))if(!k.startsWith('F'))delete base[k].tag;
+  const G=()=>JSON.parse(JSON.stringify(base));const live=[...ro.C,...ro.D,...ro.L,...ro.R];const steps=[];
+  const routRed=(g,ks)=>ks.forEach(k=>{g['F'+k].rout=true;g['F'+k].tag={t:'潰',c:'rgba(170,20,20,.95)'};});
+  const routRes=g=>{for(const q of['resA','resB']){g[q].rout=true;}};
+  const redGenFlee=g=>{g['紅將'].z-=24;g['紅將'].dur=2600;};
+  const blueRetreat=(g,dz)=>{for(const nm of live){g[nm].z+=dz;g[nm].dur=2600;}g['將'].z+=dz;g['將'].dur=2600;};
+  if(win==='和'){const g=G();routRed(g,['C','L','R']);for(const nm of ro.C)g[nm]&&(g[nm].rout=true);steps.push({g,fx:[{x:0,z:-22},{x:-8,z:-25},{x:8,z:-25}],focus:[0,-22,60],cap:'雙方同時崩潰'});return steps;}
+  if(why.includes('突穿')){
+    const sl=awlSlots(ro.C.length+ro.D.length,true);const order=['戊','丁','壬','己'].filter(nm=>ro.C.includes(nm)).concat(ro.D);
+    const g1=G();order.forEach((nm,i)=>{g1[nm].x=sl[i][0];g1[nm].z=sl[i][1]-10;g1[nm].dur=2000;});routRed(g1,['C']);
+    steps.push({g:g1,fx:[{x:0,z:-24},{x:-2,z:-27},{x:2,z:-22}],focus:[0,-24,60],cap:'錐行衝進紅軍中區'});
+    const g2=JSON.parse(JSON.stringify(g1));order.forEach(nm=>{g2[nm].z-=14;g2[nm].dur=2400;});routRed(g2,['L','R']);routRes(g2);redGenFlee(g2);
+    steps.push({g:g2,fx:[{x:-5,z:-30},{x:5,z:-30},{x:0,z:-36}],cap:'中區被突穿，方陣從中間裂開'});return steps;}
+  if(why.includes('合圍')){
+    const g1=G();for(const k of['L','R']){const sg=k==='L'?-1:1;ro[k].forEach((nm,i)=>{g1[nm].x=sg*(8.4+i*0.6);g1[nm].z=-30+i*5;g1[nm].dur=2000;});}routRed(g1,['L','R']);
+    steps.push({g:g1,fx:[{x:-7,z:-27},{x:7,z:-27},{x:-7,z:-22},{x:7,z:-22}],focus:[0,-25,58],cap:'兩翼從側面收攏'});
+    const g2=JSON.parse(JSON.stringify(g1));for(const nm of[...ro.C,...ro.D]){g2[nm].z-=5;g2[nm].dur=2000;}for(const k of['L','R']){const sg=k==='L'?-1:1;ro[k].forEach(nm=>{g2[nm].x=sg*5.5;g2[nm].dur=2000;});}
+    routRed(g2,['C']);routRes(g2);redGenFlee(g2);steps.push({g:g2,fx:[{x:0,z:-25},{x:0,z:-30}],cap:'三面合圍，方陣被夾碎'});return steps;}
+  if(why.includes('中部潰散')){
+    const g1=G();for(const k of['L','C','R']){g1['F'+k].z+=6;g1['F'+k].dur=2000;}
+    steps.push({g:g1,fx:[{x:0,z:-16},{x:-3,z:-13},{x:3,z:-13}],focus:[0,-12,60],cap:'紅軍前壓，藍軍中部潰散'});
+    const g2=JSON.parse(JSON.stringify(g1));for(const nm of live){g2[nm].z+=18;g2[nm].dur=2600;}g2['將'].z+=18;g2['將'].dur=2600;
+    steps.push({g:g2,fx:[],cap:'失去中部的支點，藍軍全線後撤'});return steps;}
+  // 方陣守住、兵力耗盡：藍軍鳴金後撤，紅軍原地不動
+  const g1=G();blueRetreat(g1,20);steps.push({g:g1,fx:[],focus:[0,-10,62],cap:why.includes('守住')?'方陣守住，藍軍鳴金收兵':'藍軍兵力耗盡，鳴金後撤'});
+  const g2=JSON.parse(JSON.stringify(g1));for(const k of['L','C','R']){g2['F'+k].tag=g2['F'+k].tag||{t:'守住',c:'rgba(160,30,20,.92)'};}steps.push({g:g2,fx:[],cap:''});return steps;}
+function playFinale(fin){stopFinale();finaleCap='';const steps=finaleSteps(fin);finaleEnd=Date.now()+FINALE_MS;finaleKey=fin.s.hist.length+':'+fin.s.over.why;
+  let t=1700;steps.forEach((st,i)=>{finaleT.push(setTimeout(()=>{if(st.focus)W.focus(st.focus[0],st.focus[1],st.focus[2]);const d={groups:st.g,arrows:[],fx:st.fx.map(f=>({...f}))};lastDesc=d;W.show(d,true);if(st.cap)toastStage(st.cap);},t));t+=i===0?2600:3000;});
+  finaleT.push(setTimeout(()=>{finaleEnd=0;W.home();if(window.__redraw)window.__redraw();},FINALE_MS));}
+// 決戰的字幕寫在側欄的「決戰中」卡片裡，不蓋戰場
+let finaleCap='';function toastStage(t){finaleCap=t;const d=document.getElementById('fcap');if(d)d.textContent=t;}
+function render3D(tl,view,arrows,animate,prevEntry){const e=tl[tl.length-1];
+  if(e.s.over&&animate&&prevEntry&&!prevEntry.s.over){const d=sceneDesc(e,'truth');d.arrows=[];d.fx=fxOf(prevEntry,e);lastDesc=d;W.show(d,true);playFinale(e);return;}
+  if(e.s.over&&finaleKey===e.s.hist.length+':'+e.s.over.why)return;   // 動畫播過了：保留決戰後的畫面
+  if(!e.s.over)stopFinale();const d=sceneDesc(e,view);d.arrows=arrows||[];if(animate&&prevEntry)d.fx=fxOf(prevEntry,e);lastDesc=d;W.show(d,animate);}
 
 // 命令卡（藍、紅、與電腦練習共用）
 function orderCard(e,sd,draft,sent,canOrder,key){const s=e.s;
@@ -276,8 +315,21 @@ function sendBtn(ready,sent,canOrder){if(!canOrder)return '<p class="note">同�
   if(sent)return '<button type="button" class="send ok" id="bSend" disabled>✓ 命令已送出・等待結算</button><p class="mini">結算之前，點別的選項可以改命令，改完要再送出一次。</p>';
   return `<button type="button" class="send" id="bSend" ${ready?'':'disabled'}>${ready?'送出命令':'兩個命令都選好才能送出'}</button>`;}
 function reportCard(st,i,view,title,pre){const lines=linesFor(st,i,view);return `<div class="card report"><p class="kick">${title||'第 '+(i+1)+' 回合戰報'}</p>${pre?`<p><b>${esc(pre)}</b></p>`:''}${lines.length?`<ol>${lines.map(t=>`<li>${esc(t)}</li>`).join('')}</ol>`:'<p>這一回合雙方沒有交戰。</p>'}${st.over&&i===st.log.length-1?`<p class="res">${esc(resultText(st.over,view))}</p>`:''}</div>`;}
-function sitCard(e,view){return `<div class="card"><p class="kick">戰場態勢</p><div class="sit">${situation(e,view).map(t=>`<div>${esc(t)}</div>`).join('')}</div></div>`;}
-function endCard(tl,view,extra){const fin=tl[tl.length-1];return `<div class="card report"><p class="kick">推演結束</p><p class="res">${esc(resultText(fin.s.over,view))}（第 ${fin.s.r} 回合）</p>
+// 目前陣形：依各方看得到的資訊說明藍軍陣形正往哪裡變
+function formNow(e,view){const s=e.s,B=s.B,fl=B.W.L.pos==='flank',cut=B.W.L.cut;
+  if(view==='blue'||view==='truth'){
+    if(fl&&B.D>=2)return ['兩面並進','後陣集中了 '+B.D+' 曲（錐行），兩翼也已到敵陣兩側（鴈行）。中央與兩側同時施壓。'];
+    if(fl)return [cut?'鴈行（陣線斷絕）':'鴈行展開',cut?'兩翼衝得太快，和中部之間斷開了；用「梯次在後」補位。':'兩翼已到敵陣兩側，牛角形出現了。下一步可以收攏側擊。'];
+    if(B.D>=2)return ['錐行','後陣集中了 '+B.D+' 曲，中部又尖又厚，準備從中央突破。紅軍看不到這個變化，除非你猛攻或對方試探。'];
+    if(B.D>0)return ['正在變成錐行','後陣集中了 '+B.D+' 曲。'];
+    return ['楔形（還看不出是哪一種）','中部在前、兩翼梯次在後。這個外形，對手分不出你要打中央還是要包兩側。'];}
+  // 紅軍與投影：只看得到兩翼在哪裡，後陣要靠試探
+  if(fl)return [cut?'藍軍：鴈行（陣線斷絕）':'藍軍：鴈行展開',cut?'藍軍兩翼衝到我軍兩側，但和中部斷開了。':'藍軍兩翼已到我軍兩側，牛角形出現了，兩側會被夾擊。'];
+  if(view==='red'&&s.seenD!=null&&s.seenD>=2)return ['藍軍：可能是錐行',`第 ${s.seenDAt} 回合看到藍軍後陣集中了 ${s.seenD} 曲，中央可能會被突破。`];
+  return ['藍軍：楔形（還看不出來）','中部在前、兩翼在後。分不出藍軍要打中央還是要包兩側。'];}
+function formCard(e,view){let [t,d]=formNow(e,view);if(view==='proj')d=d.replace(/我軍/g,'紅軍');return `<div class="card form"><p class="kick">目前陣形</p><p class="fn">${esc(t)}</p><p class="mini">${esc(d)}</p></div>`;}
+function sitCard(e,view){return formCard(e,view)+`<div class="card"><p class="kick">戰場態勢</p><div class="sit">${situation(e,view).map(t=>`<div>${esc(t)}</div>`).join('')}</div></div>`;}
+function endCard(tl,view,extra){const fin=tl[tl.length-1];if(finaleRunning())return `<div class="card report"><p class="kick">第 ${fin.s.r} 回合</p><p class="res">決戰中……</p><p id="fcap" class="fn">${esc(finaleCap)}</p><p class="mini">看戰場：勝負動畫播完後，這裡會出現結果與戰後檢討。</p></div>`;return `<div class="card report"><p class="kick">推演結束</p><p class="res">${esc(resultText(fin.s.over,view))}（第 ${fin.s.r} 回合）</p>
   <div class="row"><button type="button" class="btn main" id="bReveal">揭曉與討論</button>${extra||''}</div></div><div class="card"><h3>戰後檢討</h3>${reviewHtml(GRV.review(fin.s.hist))}</div>`;}
 function helpCard(sd,open){return `<details class="card" data-k="help" ${open?'open':''}><summary>${sd==='blue'?'藍軍':'紅軍'}須知（點開／收合）</summary>${helpHtml(sd)}</details>`;}
 function fullLog(st,view){let h='';for(let i=st.log.length-1;i>=0;i--){const L=linesFor(st,i,view);const o=st.hist[i];h+=`<div><b>第 ${i+1} 回合</b>${view==='truth'?`<div class="mini">藍：${esc(ONAME('blue',o.bo))}；紅：${esc(ONAME('red',o.ro))}</div>`:''}${L.map(t=>`<div>${esc(t)}</div>`).join('')}</div>`;}return h?`<details class="card" data-k="log"><summary>歷次戰報</summary><div class="log">${h}</div></details>`:'';}
@@ -288,7 +340,7 @@ if(role==='ai'){
   const sideEl=$('#side');
   function draw(animate,prev){const e=tl[tl.length-1],s=e.s;
     render3D(tl,s.over?'truth':me,s.over?[]:orderArrows(e,me,draft),animate,prev);
-    let h=`<div class="head"><span class="who ${me}">${me==='blue'?'你是藍軍・攻方':'你是紅軍・守方'}</span><span class="round">第 ${Math.min(s.r+1,P.ROUNDS)} / ${P.ROUNDS} 回合</span><span class="grow"></span><button type="button" class="tbtn" id="bMenu">主畫面</button></div>
+    let h=`<div class="head"><span class="who ${me}">${me==='blue'?'你是藍軍・攻方':'你是紅軍・守方'}</span><span class="round">第 ${s.over?s.r:Math.min(s.r+1,P.ROUNDS)} / ${P.ROUNDS} 回合</span><span class="grow"></span><button type="button" class="tbtn" id="bMenu">主畫面</button></div>
       <p class="mini">練習模式：電腦扮演${cpu==='blue'?'藍軍':'紅軍'}，依看得到的跡象推測你的打法。</p>`;
     if(s.over)h+=endCard(tl,me,'<button type="button" class="btn" id="bAgain">再打一局</button>');
     if(showRep>=0&&!s.over)h+=reportCard(s,showRep,me,null,cpuSaid);
@@ -303,8 +355,8 @@ if(role==='ai'){
 },60);};
     const rv=$('#bReveal');if(rv)rv.onclick=()=>showReveal(tl[tl.length-1]);
     $('#bMenu').onclick=()=>{location.href=base;};
-    const ag=$('#bAgain');if(ag)ag.onclick=()=>{hist=[];tl=timeline(hist);draft={};showRep=-1;gid=Math.random().toString(36).slice(2);draw(false);W.home();};}
-  draw(false);return;}
+    const ag=$('#bAgain');if(ag)ag.onclick=()=>{stopFinale();hist=[];tl=timeline(hist);draft={};showRep=-1;gid=Math.random().toString(36).slice(2);draw(false);W.home();};}
+  window.__redraw=()=>draw(false);draw(false);return;}
 
 /* ====================== 連線局：共用資料 ====================== */
 let hist=null,tl=null,orders={blue:null,red:null},cmd={blue:null,red:null},cfg={ai:{blue:false,red:false}};
@@ -335,7 +387,7 @@ if(role==='ref'){
     if(changed||!lastDesc)render3D(tl,'truth',arrows,anim,prev);else{lastDesc.arrows=arrows;W.arrows(arrows);}
     const ready=sd=>cfg.ai[sd]||!!curOrder(sd);const both=ready('blue')&&ready('red');
     const st=sd=>{const o=curOrder(sd);return cfg.ai[sd]?'<span class="okc">電腦代下令</span>':o?`<span class="okc">已下令 ✓</span> <span class="mini">${esc(ONAME(sd,o.o))}</span>`:'<span class="waitc">還沒下令</span>';};
-    let h=`<div class="head"><span class="who ref">老師裁判</span><span class="round">第 ${Math.min(s.r+1,P.ROUNDS)} / ${P.ROUNDS} 回合</span><span class="grow"></span><span class="mini">房號 ${room}</span></div>
+    let h=`<div class="head"><span class="who ref">老師裁判</span><span class="round">第 ${s.over?s.r:Math.min(s.r+1,P.ROUNDS)} / ${P.ROUNDS} 回合</span><span class="grow"></span><span class="mini">房號 ${room}</span></div>
       <p class="note">這個畫面看得到雙方全部部署與命令，請不要投影。</p>
       <div class="row"><a class="btn" href="${esc(link('qr'))}" target="_blank" rel="noopener" style="text-align:center;text-decoration:none">QR 碼頁</a><a class="btn" href="${esc(link('proj'))}" target="_blank" rel="noopener" style="text-align:center;text-decoration:none">投影畫面</a></div>`;
     if(s.over)h+=endCard(tl,'truth','<button type="button" class="btn" id="bRestart">再開一局</button>');
@@ -356,7 +408,7 @@ if(role==='ref'){
     const rv=$('#bReveal');if(rv)rv.onclick=()=>showReveal(tl[tl.length-1]);
     // 自動結算：條件成立後倒數 3 秒；倒數中畫面重畫不會重新計時
     if(autoRes&&both&&!s.over){if(!autoT)autoT=setTimeout(()=>{autoT=0;settle();},3000);}else{clearTimeout(autoT);autoT=0;}}
-  onState.push(draw);draw(null,true);return;}
+  window.__redraw=()=>draw(null,false);onState.push(draw);draw(null,true);return;}
 
 /* ====================== 投影 ====================== */
 if(role==='proj'){
@@ -365,14 +417,14 @@ if(role==='proj'){
     if(changed&&hist.length>lastLen&&lastLen>=0)showRep=hist.length-1;if(changed&&hist.length===0)showRep=-1;const anim=changed&&prev&&hist.length===prev.s.hist.length+1;lastLen=hist.length;
     if(changed||!lastDesc)render3D(tl,'proj',[],anim,prev);
     const st=sd=>curOrder(sd)||cfg.ai[sd]?'<span class="okc">已下令 ✓</span>':'<span class="waitc">思考中…</span>';
-    let h=`<div class="head"><span class="who proj">投影</span><span class="round">第 ${Math.min(s.r+1,P.ROUNDS)} / ${P.ROUNDS} 回合</span><span class="grow"></span><span class="mini">房號 ${room}</span></div>`;
+    let h=`<div class="head"><span class="who proj">投影</span><span class="round">第 ${s.over?s.r:Math.min(s.r+1,P.ROUNDS)} / ${P.ROUNDS} 回合</span><span class="grow"></span><span class="mini">房號 ${room}</span></div>`;
     if(s.over)h+=endCard(tl,'truth');
     else h+=`<div class="card"><div class="stat" style="font-size:16px"><span class="k">藍軍（攻方）</span><span>${st('blue')}</span><span class="k">紅軍（守方）</span><span>${st('red')}</span></div></div>`;
     if(showRep>=0&&!s.over)h+=reportCard(s,showRep,'proj');
     if(!s.over)h+=sitCard(e,'proj')+`<p class="mini">投影畫面只顯示雙方都知道的事：藍軍集中到中部後方的曲不顯示；紅軍預備隊顯示的是藍軍斥候回報的位置（晚一回合）。結束後全部揭曉。</p>`;
     h+=fullLog(s,s.over?'truth':'proj');
     paintSide(h,!!anim);const rv=$('#bReveal');if(rv)rv.onclick=()=>showReveal(tl[tl.length-1]);}
-  onState.push(draw);draw(null,true);return;}
+  window.__redraw=()=>draw(null,false);onState.push(draw);draw(null,true);return;}
 
 /* ====================== 藍軍／紅軍指揮 ====================== */
 if(side){
@@ -390,7 +442,7 @@ if(side){
     const arrows=s.over?[]:orderArrows(e,side,stripD(draft));
     if(changed||!lastDesc)render3D(tl,side,arrows,anim,prev);else{lastDesc.arrows=arrows;W.arrows(arrows);}
     const can=isCmd();
-    let h=`<div class="head"><span class="who ${side}">${side==='blue'?'你是藍軍・攻方':'你是紅軍・守方'}</span><span class="round">第 ${Math.min(s.r+1,P.ROUNDS)} / ${P.ROUNDS} 回合</span><span class="grow"></span><span class="mini">房號 ${room}</span></div>`;
+    let h=`<div class="head"><span class="who ${side}">${side==='blue'?'你是藍軍・攻方':'你是紅軍・守方'}</span><span class="round">第 ${s.over?s.r:Math.min(s.r+1,P.ROUNDS)} / ${P.ROUNDS} 回合</span><span class="grow"></span><span class="mini">房號 ${room}</span></div>`;
     if(!can)h+=`<div class="card"><p>${aliveS(side)?'同隊已經有指揮官在下令，你在觀看。':'目前沒有指揮官。'}</p><button type="button" class="btn" id="bClaim">改由我指揮</button></div>`;
     if(s.over)h+=endCard(tl,side);
     if(showRep>=0&&!s.over)h+=reportCard(s,showRep,side);
@@ -403,5 +455,5 @@ if(side){
     const rv=$('#bReveal');if(rv)rv.onclick=()=>showReveal(tl[tl.length-1]);
     $('#side').querySelectorAll('details').forEach(d=>d.ontoggle=()=>{if(d.querySelector('summary').textContent.includes('須知'))helpOpen=d.open;});}
   function stripD(d){const o={};for(const k of['c','w','f','res'])if(d[k])o[k]=d[k];return o;}
-  onState.push(draw);draw(null,true);return;}
+  window.__redraw=()=>draw(null,false);onState.push(draw);draw(null,true);return;}
 })();

@@ -30,7 +30,9 @@ const order=async(p,side,o)=>{const gs=side==='blue'?[['c',o[0]],['w',o[1]]]:[['
   const tx=await p.innerText('#bSend');if(!tx.includes('命令已送出'))fail(side+' 送出後按鈕沒有變成已送出：'+tx);
   const cls=await p.getAttribute('#bSend','class');if(!cls.includes('ok'))fail(side+' 送出後按鈕沒有轉綠');};
 const settle=async()=>{await ref.waitForTimeout(250);const d=await ref.isDisabled('#bSettle');if(d){fail('雙方下令後結算鈕不能按');return;}await ref.click('#bSettle');await ref.waitForTimeout(2300);};
-const over=async()=>!!(await ref.$('#bReveal'));
+const over=async()=>!!(await ref.$('#bReveal'))||(await ref.innerText('#side')).includes('決戰中');
+const waitFinale=async()=>{if(!(await ref.innerText('#side')).includes('決戰中'))return;finales++;for(const [n,p] of [['投影',proj],['藍',blue],['紅',red]]){const t=await p.innerText('#side');if(!t.includes('決戰中'))fail(n+' 沒有播勝負動畫');if(await p.$('#bReveal'))fail(n+' 動畫還沒播完就出現結果');}
+  for(const p of [ref,blue,red,proj])await p.waitForSelector('#bReveal',{timeout:30000}).catch(()=>fail('勝負動畫播完後沒有出現結果'));};let finales=0;
 const check=async tag=>{for(const [n,p] of [['藍軍',blue],['紅軍',red],['投影',proj],['裁判',ref]])await H.layout(p,n+' '+tag,errs);};
 const roundOf=async p=>((await p.innerText('.round')).match(/第 (\d+)/)||[])[1];
 async function game(seqB,seqR,opts={}){let i=0;log('開始一局');
@@ -48,7 +50,7 @@ async function game(seqB,seqR,opts={}){let i=0;log('開始一局');
     const pt=await proj.innerText('#side');if(/中部(待命|接戰牽制|猛攻)、兩翼|前排(頂住|前壓|試探)、預備隊/.test(pt)&&!(await over()))fail('投影畫面出現命令內容');
     if(opts.auto&&i===0){await ref.check('#cAuto');await ref.waitForTimeout(3000+2500);await ref.uncheck('#cAuto').catch(()=>{});}
     else await settle();
-    const r1=await roundOf(ref);const ov=await over();
+    const ov=await over();if(ov)await waitFinale();const r1=await roundOf(ref);
     if(!ov&&+r1!==+r0+1)fail(`結算後回合沒有前進：${r0}→${r1}`);
     // 四個畫面回合數一致
     for(const [n,p] of [['藍',blue],['紅',red],['投影',proj]]){const rr=await roundOf(p);if(rr!==r1)fail(`${n} 的回合數 ${rr} 和裁判 ${r1} 不同`);}
@@ -84,6 +86,6 @@ await game(P('纏梯 攻梯 纏斜 纏收 纏收'),null,{aiRed:true});
 for(const [n,p] of [['藍',blue],['紅',red],['投影',proj],['裁判',ref]]){await p.click('#bSty');await p.waitForTimeout(500);await p.click('#bHome');await p.click('#bSty');await p.waitForTimeout(300);}
 // 視角操作：拖曳、滾輪
 await ref.mouse.move(300,300);await ref.mouse.down();await ref.mouse.move(420,260,{steps:6});await ref.mouse.up();await ref.mouse.wheel(0,300);await ref.waitForTimeout(400);
-console.log(note.join('\n'));console.log('問題',errs.length);errs.slice(0,20).forEach(e=>console.log('  -',e));
+note.push('播放勝負動畫 '+finales+' 次');console.log(note.join('\n'));console.log('問題',errs.length);errs.slice(0,20).forEach(e=>console.log('  -',e));
 await blue.screenshot({path:'r_blue.png'});await red.screenshot({path:'r_red.png'});await ref.screenshot({path:'r_ref.png'});
 await b.close();process.exit(errs.length?1:0);})().catch(e=>{console.log('測試程式本身出錯',e.message.slice(0,600));process.exit(2);});

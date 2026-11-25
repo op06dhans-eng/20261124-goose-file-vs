@@ -10,10 +10,17 @@ const WF=[[11.6,-28.6],[13.6,-23],[15.6,-17.4]],WCUT=[[12.4,-30],[19,-20],[25.6,
 const WSLOT={丙:['L',0],乙:['L',1],甲:['L',2],癸:['R',0],庚:['R',1],辛:['R',2]};
 const RESP={rear:[[-2.1,-41],[2.1,-41]],center:[[-2.1,-34.4],[2.1,-34.4]],flanks:[[-11.8,-36.5],[11.8,-36.5]]};
 const RN={rear:'後方居中',center:'中央後方',flanks:'兩側後方'};
+// 錐行：後曲集中之後，中部排成「前尖、身窄、縱深厚」的錐子（一、二、二、二……排）
+const AWL_Z0=ct=>ct?-15.2:0;
+function awlSlots(n,ct){const out=[],z0=AWL_Z0(ct);let r=0,left=n;while(left>0){const k=r===0?1:Math.min(2,left);for(let j=0;j<k;j++)out.push([k===1?0:(j?2.9:-2.9),z0+r*5.6]);left-=k;r++;}return out;}
 function bluePos(s,ro,origSlots){const Pp={};const ct=s.B.contact;const CP=ct?CP1:CP0;
-  for(const nm of ro.C)Pp[nm]=CP[nm];
-  const b=CP['己'][1];ro.D.forEach((nm,i)=>Pp[nm]=[i%2?2.9:-2.9,b+5.8*(1+Math.floor(i/2))]);
-  for(const k of['L','R']){const sg=k==='L'?-1:1,w=s.B.W[k];const tbl=w.pos==='flank'?(w.cut?WCUT:WF):(ct?WB1:WB0);
+  const awl=!origSlots&&ro.D.length>0;
+  if(awl){const order=['戊','丁','壬','己'].filter(nm=>ro.C.includes(nm)).concat(ro.D);const sl=awlSlots(order.length,ct);order.forEach((nm,i)=>Pp[nm]=sl[i]);}
+  else{for(const nm of ro.C)Pp[nm]=CP[nm];
+    const b=CP['己'][1];ro.D.forEach((nm,i)=>Pp[nm]=[i%2?2.9:-2.9,b+5.8*(1+Math.floor(i/2))]);}
+  for(const k of['L','R']){const sg=k==='L'?-1:1,w=s.B.W[k];
+    if(awl&&w.pos!=='flank'){const z0=AWL_Z0(ct);ro[k].forEach((nm,i)=>{Pp[nm]=[sg*(9.2+i*2.6),z0+(2+i)*5.6];});continue;}
+    const tbl=w.pos==='flank'?(w.cut?WCUT:WF):(ct?WB1:WB0);
     ro[k].forEach((nm,i)=>{const t=tbl[origSlots&&w.pos!=='flank'?WSLOT[nm][1]:i];Pp[nm]=[sg*t[0],t[1]];});}
   return Pp;}
 // 由命令紀錄重播出每一回合的局面，並追蹤每個曲在哪裡、何時陣亡
@@ -26,6 +33,6 @@ function timeline(hist){let s=GR.init();let ro={C:['戊','己','丁','壬'],D:[]
     while(ro.C.length>n.B.M)kill(ro.C.pop(),n.B.M<=0);
     s=n;out.push({s,ro});}
   return out;}
-const API={QU,FL,CP0,CP1,WB0,WB1,WF,WCUT,WSLOT,RESP,RN,bluePos,timeline};
+const API={QU,FL,CP0,CP1,WB0,WB1,WF,WCUT,WSLOT,RESP,RN,bluePos,timeline,awlSlots,AWL_Z0};
 if(typeof module!=='undefined'&&module.exports)module.exports=API;else root.GL=API;
 })(typeof window!=='undefined'?window:globalThis);
